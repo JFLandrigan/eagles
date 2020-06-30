@@ -1,0 +1,170 @@
+
+Voting Classifier with base lr and rf
+
+grid search tuning for f1 for species setsoa
+
+For missing values used median fills with imputer for others. 
+
+Removed the prp cols, loc_pref, cl and vis ideal
+
+regress and corr feature select
+ 
+ 
+Model testing: VotingClassifier
+ 
+params tested: {'estimators': [('rf', Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('clf', RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, m...mators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False))])), ('lr', Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('scale', MinMaxScaler(copy=True, feature_range=(0, 1))), ('clf', LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False))]))], 'flatten_transform': None, 'n_jobs': None, 'voting': 'soft', 'weights': [1, 1], 'rf': Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('clf', RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, m...mators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False))]), 'lr': Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('scale', MinMaxScaler(copy=True, feature_range=(0, 1))), ('clf', LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False))]), 'rf__memory': None, 'rf__steps': [('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('clf', RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, min_impurity_decrease=0.0,
+            min_impurity_split=None, min_samples_leaf=1,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            n_estimators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False))], 'rf__impute': SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0), 'rf__clf': RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, min_impurity_decrease=0.0,
+            min_impurity_split=None, min_samples_leaf=1,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            n_estimators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False), 'rf__impute__copy': True, 'rf__impute__fill_value': None, 'rf__impute__missing_values': nan, 'rf__impute__strategy': 'median', 'rf__impute__verbose': 0, 'rf__clf__bootstrap': True, 'rf__clf__class_weight': 'balanced_subsample', 'rf__clf__criterion': 'gini', 'rf__clf__max_depth': 10, 'rf__clf__max_features': 'auto', 'rf__clf__max_leaf_nodes': None, 'rf__clf__min_impurity_decrease': 0.0, 'rf__clf__min_impurity_split': None, 'rf__clf__min_samples_leaf': 1, 'rf__clf__min_samples_split': 2, 'rf__clf__min_weight_fraction_leaf': 0.0, 'rf__clf__n_estimators': 100, 'rf__clf__n_jobs': None, 'rf__clf__oob_score': False, 'rf__clf__random_state': 4, 'rf__clf__verbose': 0, 'rf__clf__warm_start': False, 'lr__memory': None, 'lr__steps': [('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('scale', MinMaxScaler(copy=True, feature_range=(0, 1))), ('clf', LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False))], 'lr__impute': SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0), 'lr__scale': MinMaxScaler(copy=True, feature_range=(0, 1)), 'lr__clf': LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False), 'lr__impute__copy': True, 'lr__impute__fill_value': None, 'lr__impute__missing_values': nan, 'lr__impute__strategy': 'median', 'lr__impute__verbose': 0, 'lr__scale__copy': True, 'lr__scale__feature_range': (0, 1), 'lr__clf__C': 0.25, 'lr__clf__class_weight': 'balanced', 'lr__clf__dual': False, 'lr__clf__fit_intercept': True, 'lr__clf__intercept_scaling': 1, 'lr__clf__max_iter': 1000, 'lr__clf__multi_class': 'warn', 'lr__clf__n_jobs': None, 'lr__clf__penalty': 'l2', 'lr__clf__random_state': 4, 'lr__clf__solver': 'liblinear', 'lr__clf__tol': 0.0001, 'lr__clf__verbose': 0, 'lr__clf__warm_start': False}
+ 
+tune metric: f1
+ 
+Features included: 
+['sepal_width', 'petal_length']
+ 
+Random Seed Value: 323 
+ 
+Params of model: {'estimators': [('rf', Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('clf', RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, m...mators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False))])), ('lr', Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('scale', MinMaxScaler(copy=True, feature_range=(0, 1))), ('clf', LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False))]))], 'flatten_transform': None, 'n_jobs': None, 'voting': 'soft', 'weights': [1, 1], 'rf': Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('clf', RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, m...mators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False))]), 'lr': Pipeline(memory=None,
+     steps=[('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('scale', MinMaxScaler(copy=True, feature_range=(0, 1))), ('clf', LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False))]), 'rf__memory': None, 'rf__steps': [('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('clf', RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, min_impurity_decrease=0.0,
+            min_impurity_split=None, min_samples_leaf=1,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            n_estimators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False))], 'rf__impute': SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0), 'rf__clf': RandomForestClassifier(bootstrap=True, class_weight='balanced_subsample',
+            criterion='gini', max_depth=10, max_features='auto',
+            max_leaf_nodes=None, min_impurity_decrease=0.0,
+            min_impurity_split=None, min_samples_leaf=1,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            n_estimators=100, n_jobs=None, oob_score=False, random_state=4,
+            verbose=0, warm_start=False), 'rf__impute__copy': True, 'rf__impute__fill_value': None, 'rf__impute__missing_values': nan, 'rf__impute__strategy': 'median', 'rf__impute__verbose': 0, 'rf__clf__bootstrap': True, 'rf__clf__class_weight': 'balanced_subsample', 'rf__clf__criterion': 'gini', 'rf__clf__max_depth': 10, 'rf__clf__max_features': 'auto', 'rf__clf__max_leaf_nodes': None, 'rf__clf__min_impurity_decrease': 0.0, 'rf__clf__min_impurity_split': None, 'rf__clf__min_samples_leaf': 1, 'rf__clf__min_samples_split': 2, 'rf__clf__min_weight_fraction_leaf': 0.0, 'rf__clf__n_estimators': 100, 'rf__clf__n_jobs': None, 'rf__clf__oob_score': False, 'rf__clf__random_state': 4, 'rf__clf__verbose': 0, 'rf__clf__warm_start': False, 'lr__memory': None, 'lr__steps': [('impute', SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0)), ('scale', MinMaxScaler(copy=True, feature_range=(0, 1))), ('clf', LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False))], 'lr__impute': SimpleImputer(copy=True, fill_value=None, missing_values=nan,
+       strategy='median', verbose=0), 'lr__scale': MinMaxScaler(copy=True, feature_range=(0, 1)), 'lr__clf': LogisticRegression(C=0.25, class_weight='balanced', dual=False,
+          fit_intercept=True, intercept_scaling=1, max_iter=1000,
+          multi_class='warn', n_jobs=None, penalty='l2', random_state=4,
+          solver='liblinear', tol=0.0001, verbose=0, warm_start=False), 'lr__impute__copy': True, 'lr__impute__fill_value': None, 'lr__impute__missing_values': nan, 'lr__impute__strategy': 'median', 'lr__impute__verbose': 0, 'lr__scale__copy': True, 'lr__scale__feature_range': (0, 1), 'lr__clf__C': 0.25, 'lr__clf__class_weight': 'balanced', 'lr__clf__dual': False, 'lr__clf__fit_intercept': True, 'lr__clf__intercept_scaling': 1, 'lr__clf__max_iter': 1000, 'lr__clf__multi_class': 'warn', 'lr__clf__n_jobs': None, 'lr__clf__penalty': 'l2', 'lr__clf__random_state': 4, 'lr__clf__solver': 'liblinear', 'lr__clf__tol': 0.0001, 'lr__clf__verbose': 0, 'lr__clf__warm_start': False} 
+ 
+accuracy_scores scores: [1. 1. 1. 1. 1.] 
+accuracy_scoresmean: 1.0 
+accuracy_scoresstandard deviation: 0.0 
+f1_scores scores: [1. 1. 1. 1. 1.] 
+f1_scoresmean: 1.0 
+f1_scoresstandard deviation: 0.0 
+precision_scores scores: [1. 1. 1. 1. 1.] 
+precision_scoresmean: 1.0 
+precision_scoresstandard deviation: 0.0 
+precision_recall_auc_scores scores: [1. 1. 1. 1. 1.] 
+precision_recall_auc_scoresmean: 1.0 
+precision_recall_auc_scoresstandard deviation: 9.930136612989092e-17 
+ 
+Final cv train test split results 
+accuracy_scores score: 1.0
+f1_scores score: 1.0
+precision_scores score: 1.0
+precision_recall_auc_scores score: 1.0
+ 
+ 
+[[21  0]
+ [ 0  9]] 
+ 
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00        21
+           1       1.00      1.00      1.00         9
+
+   micro avg       1.00      1.00      1.00        30
+   macro avg       1.00      1.00      1.00        30
+weighted avg       1.00      1.00      1.00        30
+ 
+ 
+      probab_bin  count  percent_actual
+20  (-0.05, 0.0]      0             NaN
+8    (0.0, 0.05]      0             NaN
+9    (0.05, 0.1]      0             NaN
+1    (0.1, 0.15]      7             0.0
+0    (0.15, 0.2]     14             0.0
+10   (0.2, 0.25]      0             NaN
+11   (0.25, 0.3]      0             NaN
+7    (0.3, 0.35]      0             NaN
+13   (0.35, 0.4]      0             NaN
+14   (0.4, 0.45]      0             NaN
+12   (0.45, 0.5]      0             NaN
+16   (0.5, 0.55]      0             NaN
+17   (0.55, 0.6]      0             NaN
+18   (0.6, 0.65]      0             NaN
+5    (0.65, 0.7]      1             1.0
+19   (0.7, 0.75]      0             NaN
+4    (0.75, 0.8]      1             1.0
+2    (0.8, 0.85]      5             1.0
+3    (0.85, 0.9]      2             1.0
+15   (0.9, 0.95]      0             NaN
+6    (0.95, 1.0]      0             NaN 
+ 
+                              features     value
+0  RandomForestClassifier_petal_length  0.693139
+1   RandomForestClassifier_sepal_width  0.306861
+0      LogisticRegression_petal_length -2.435594
+1       LogisticRegression_sepal_width  1.148394
