@@ -10,11 +10,7 @@ def create_summary_table(data, plot_dims=[], summary_stats=[]):
     tmp = data.copy(deep=True)
     tmp = tmp.groupby(["Cluster"])[plot_dims].agg(summary_stats)
 
-    print("Base Cluster Stats \n")
-    print(round(tmp.T, 2))
-    print("\n\n")
-
-    return
+    return tmp
 
 
 def run_cluster_comps(data=None, ft_cols=None):

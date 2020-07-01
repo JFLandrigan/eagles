@@ -1,10 +1,3 @@
-import sys
-
-if "win" in sys.platform:
-    ext_char = "\\"
-else:
-    ext_char = "/"
-
 clf_models = [
     "RandomForestClassifier",
     "GradientBoostingClassifier",

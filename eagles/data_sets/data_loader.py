@@ -1,21 +1,11 @@
 import os
 from sys import platform
 import pandas as pd
+from eagles import config
 
 
 def construct_path():
-    if platform == "linux" or platform == "linux2":
-        # linux
-        ext_char = "/"
-    elif platform == "darwin":
-        # OS X
-        ext_char = "/"
-    elif platform == "win32":
-        # Windows...
-        ext_char = "\\"
-
-    file_path = os.path.abspath(os.path.dirname(__file__)) + ext_char
-
+    file_path = os.path.abspath(os.path.dirname(__file__)) + config.ext_char
     return file_path
 
 

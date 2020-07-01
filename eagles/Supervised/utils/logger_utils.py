@@ -1,4 +1,4 @@
-from eagles.Supervised import config
+from eagles import config
 import os
 import pickle
 import time
@@ -13,7 +13,7 @@ def construct_save_dir(fl_path=None, fl_name=None, model_name=None):
     )
 
     # if no timestamp in the model name then add a time stamp for creating the data dir
-    if ~ timestr in fl_name:
+    if ~timestr in fl_name:
         timestr = time.strftime("%Y%m%d-%H%M")
         # strip .txt from file name so that can create a dir to save log, data and model to
         tmp_fl_name = fl_name.replace(".txt", "")
@@ -117,10 +117,10 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
     return
 
 
-def pickle_data(data=None, fl_path=None, fl_name=None):
+def pickle_data(data=None, fl_path=None, fl_name=None, data_type=None):
 
     # save out the data
-    with open(fl_path + fl_name, "wb") as handle:
+    with open(fl_path + data_type + '_' + fl_name, "wb") as handle:
         pickle.dump(data, handle)
 
     return
