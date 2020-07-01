@@ -2,7 +2,7 @@ from eagles.Unsupervised.utils import plot_utils as pu
 from eagles.Unsupervised.utils import cluster_eval_utils as ceu
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN, OPTICS
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import silhouette_score
 from kneed import KneeLocator
@@ -28,8 +28,6 @@ def _init_method(model=None, params={}):
         mod = AgglomerativeClustering(**params)
     elif model == "dbscan":
         mod = DBSCAN(**params)
-    elif model == "optics":
-        mod = OPTICS(**params)
     else:
         mod = model
 
@@ -102,7 +100,7 @@ def find_optimal_clusters(
                 print("WARNING METRIC NOT SUPPORTED")
                 return
 
-    elif cluster_method in ["dbscan", "optics"]:
+    elif cluster_method in ["dbscan"]:
         model = _init_method(model=cluster_method, params=params)
         model.fit_predict(data[ft_cols])
     else:
@@ -135,7 +133,7 @@ def find_optimal_clusters(
 
         pu.plot_score_curve(data=res_dict, metric=metric, opt_n_clusters=opt_n_clusters)
 
-    elif cluster_method in ["dbscan", "optics"]:
+    elif cluster_method in ["dbscan"]:
         opt_n_clusters = len(set(model.labels_)) - (1 if -1 in model.labels_ else 0)
 
     print("Optimal number of clusters: " + str(opt_n_clusters) + "\n")
