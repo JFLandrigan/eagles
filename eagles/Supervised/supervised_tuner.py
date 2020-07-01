@@ -207,11 +207,11 @@ def tune_test_model(
 
                     tmp_data = X.copy(deep=True)
                     tmp_data["y_true"] = y
-                    lu.pickle_data_model(
-                        data=tmp_data, fl_path=log_path, fl_name=log_name
+                    lu.pickle_data(
+                        data=tmp_data, fl_path=log_path, fl_name=log_name, data_type=x
                     )
                 elif x == "mod":
-                    lu.pickle_data_model(data=mod, fl_path=log_path, fl_name=log_name)
+                    lu.pickle_data(data=mod, fl_path=log_path, fl_name=log_name, data_type=x)
                 else:
                     print("LOG TYPE NOT SUPPORTED: " + x)
 
@@ -411,11 +411,18 @@ def model_eval(
         if get_ft_imp:
             log_data["ft_imp_df"] = ft_imp_df
 
+
+        # if called from tune test then return the log data for final appending before logout
+        # else log out the data and then return the final dictionary
+        # TODO add in funcitonality to log out the model and the data in a dir just like the tune and tester
         if tune_test:
             return log_data
+        
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
+
+            return log_data
 
     return

@@ -1,5 +1,6 @@
 from eagles.Unsupervised.utils import plot_utils as pu
 from eagles.Unsupervised.utils import cluster_eval_utils as ceu
+from eagles.Unsupervised.utils import logger_utils as lu
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
@@ -48,6 +49,10 @@ def find_optimal_clusters(
     run_stat_comps=True,
     plot_scale=None,
     random_seed=None,
+    log="log",
+    log_name=None,
+    log_path=None,
+    log_note=None,
 ):
 
     if min_num_clusters == max_num_clusters:
@@ -148,6 +153,10 @@ def find_optimal_clusters(
         summary_stats=summary_stats,
         run_stat_comps=run_stat_comps,
         plot_scale=plot_scale,
+        log=log,
+        log_name=log_name,
+        log_path=log_path,
+        log_note=log_note,
     )
 
     return data
@@ -164,6 +173,10 @@ def eval_clusters(
     summary_stats=[],
     run_stat_comps=True,
     plot_scale=None,
+    log="log",
+    log_name=None,
+    log_path=None,
+    log_note=None,
 ):
 
     if len(ft_cols) == 0:
@@ -190,7 +203,10 @@ def eval_clusters(
     data["Cluster"] = model.labels_
 
     print("Silhouette Score: " + str(round(silhouette_score(data, model.labels_), 2)))
-    if method == "kmeans":
+    if type(model).__name__ == "Pipeline":
+        if type(model.named_steps["model"]).__name__ == "KMeans":
+            print("WSS Total: " + str(round(model.named_steps["model"].inertia_, 2)) + "\n")
+    elif method == "kmeans":
         print("WSS Total: " + str(round(model.inertia_, 2)) + "\n")
 
     if len(plot_dims) == 0:
@@ -199,9 +215,13 @@ def eval_clusters(
     print("Number of Observations per Cluster")
     print(str(data["Cluster"].value_counts()) + "\n\n")
 
-    ceu.create_summary_table(
+    base_cluster_stats = ceu.create_summary_table(
         data=data, plot_dims=plot_dims, summary_stats=summary_stats
     )
+    print("Base Cluster Stats \n")
+    print(round(base_cluster_stats.T, 2))
+    print("\n\n")
+
     if run_stat_comps:
         sig_test_results, post_hoc_comps = ceu.run_cluster_comps(
             data=data, ft_cols=ft_cols
@@ -219,5 +239,34 @@ def eval_clusters(
 
     pu.plot_mean_cluster_scores(data=data, plot_scale=plot_scale)
     pu.plot_ft_relationships(data=data, plot_dims=plot_dims)
+
+    if log:
+        log_data = {
+            "n_clusters":n_clusters
+            ,"features":ft_cols
+            ,"Silhouette Score":round(silhouette_score(data, model.labels_), 2)
+            ,"data":data
+            ,"params": model.get_params()
+            ,"base_cluster_stats":round(base_cluster_stats,2)
+        }
+
+        if type(model).__name__ == "Pipeline":
+            log_data["method"] = type(model).__name__
+            pipe_steps = "Pipe steps: "
+            for k in model.named_steps.keys():
+                pipe_steps = pipe_steps + type(model.named_steps[k]).__name__ + " "
+            log_data["pipe_steps"] = pipe_steps
+
+        if type(model).__name__ == "Pipeline":
+            if type(model.named_steps["model"]).__name__ == "KMeans":
+                log_data["WSS"] = round(model.named_steps["model"].inertia_,2)
+        elif method == "kmeans":
+            log_data["WSS"] = round(model.inertia_, 2)
+
+        if log_note:
+            log_data['note'] = log_note
+
+        lu.log_results(fl_name=log_name, fl_path=log_path, log_data=log_data)
+
 
     return data

@@ -1,6 +1,6 @@
 import os
 import time
-import pickle
+import pandas as pd
 from eagles import config
 
 
@@ -49,7 +49,7 @@ def construct_save_path(fl_path=None, fl_name=None, model_name=None):
     return [fl_path, fl_name, timestr]
 
 
-def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
+def log_results(fl_name=None, fl_path=None, log_data=None):
 
     fl_path, fl_name = construct_save_path(
         fl_name=fl_name, fl_path=fl_path, model_name=log_data["model"]
@@ -60,6 +60,31 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
 
     f = open(save_path, "w")
 
-    return
+    if "note" in log_data.keys():
+        f.write(str(log_data["note"]) + " \n \n")
 
-print('hello world')
+    if log_data["method"] == "Pipeline":
+        f.write("Pipepline" + "\n")
+        f.write(log_data["pipe_steps"] + "\n \n")
+    else:
+        f.write("Model testing: " + log_data["method"] + "\n \n")
+
+    f.write("Features included: " + "\n" + str(log_data["features"]) + "\n \n")
+    f.write("Params of model: " + str(log_data["params"]) + " \n \n")
+
+    f.write("Silhouette Score: " + str(log_data["Silhouette Score"]))
+    if "WSS" in log_data.keys():
+        f.write("WSS Total: " + str(log_data["WSS"]))
+
+    f.write("Number of Observations per Cluster")
+    f.write(str(log_data["data"]["Cluster"].value_counts()) + "\n\n")
+
+    f.write("Base Cluster Stats \n")
+    pd.set_option("display.max_rows", None)
+    pd.set_option("display.max_colwidth", 250)
+    f.write(log_data['base_cluster_stats'].T.to_string())
+    f.write("\n\n")
+
+    f.close()
+
+    return

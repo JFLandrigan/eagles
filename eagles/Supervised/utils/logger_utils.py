@@ -117,10 +117,10 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
     return
 
 
-def pickle_data(data=None, fl_path=None, fl_name=None):
+def pickle_data(data=None, fl_path=None, fl_name=None, data_type=None):
 
     # save out the data
-    with open(fl_path + fl_name, "wb") as handle:
+    with open(fl_path + data_type + '_' + fl_name, "wb") as handle:
         pickle.dump(data, handle)
 
     return
