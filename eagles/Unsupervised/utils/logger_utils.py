@@ -61,3 +61,5 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
     f = open(save_path, "w")
 
     return
+
+print('hello world')
