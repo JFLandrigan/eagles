@@ -16,6 +16,8 @@ from skopt import BayesSearchCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
+import logging
+logger = logging.getLogger(__name__)
 
 def tune_test_model(
     X=None,
@@ -90,7 +92,7 @@ def tune_test_model(
             eval_metrics = ["mse"]
 
     if pipe and scale:
-        print("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
+        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
         return
 
     if pipe:
@@ -213,14 +215,14 @@ def tune_test_model(
                 elif x == "mod":
                     lu.pickle_data(data=mod, fl_path=log_path, fl_name=log_name, data_type=x)
                 else:
-                    print("LOG TYPE NOT SUPPORTED: " + x)
+                    logger.warning("LOG TYPE NOT SUPPORTED: " + x)
 
         if log == "log":
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=True
             )
         else:
-            print("LOG TYPE NOT SUPPORTED: " + log)
+            logger.warning("LOG TYPE NOT SUPPORTED: " + log)
 
     return [mod, params, features]
 

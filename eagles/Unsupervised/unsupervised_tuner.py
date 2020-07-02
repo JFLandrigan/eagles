@@ -7,7 +7,9 @@ from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import silhouette_score
 from kneed import KneeLocator
+import logging
 
+logger = logging.getLogger(__name__)
 
 def find_max_sil(res_dict):
     max_ind = res_dict["scores"].argmax()
@@ -20,7 +22,7 @@ def find_max_sil(res_dict):
 def _init_method(model=None, params={}):
 
     if model is None:
-        print("No model passed in")
+        logger.warning("No model passed in")
         return
 
     if model == "kmeans":
@@ -56,7 +58,7 @@ def find_optimal_clusters(
 ):
 
     if min_num_clusters == max_num_clusters:
-        print("WARNING MIN AND MAX NUM CLUSTERS SHOULD NOT BE EQUAL")
+        logger.warning("WARNING MIN AND MAX NUM CLUSTERS SHOULD NOT BE EQUAL")
         return
 
     if random_seed is None:
@@ -93,23 +95,23 @@ def find_optimal_clusters(
             res_dict["n_clusters"] = np.append(res_dict["n_clusters"], i)
             model = _init_method(model=cluster_method, params=params)
 
-            model.fit_predict(data[ft_cols])
+            pred_labels = model.fit_predict(data[ft_cols])
 
             if metric in ["max_sil", "knee_sil"]:
                 res_dict["scores"] = np.append(
-                    res_dict["scores"], silhouette_score(data, model.labels_)
+                    res_dict["scores"], silhouette_score(data, pred_labels)
                 )
             elif metric == "knee_wss":
                 res_dict["scores"] = np.append(res_dict["scores"], model.inertia_)
             else:
-                print("WARNING METRIC NOT SUPPORTED")
+                logger.warning("WARNING METRIC NOT SUPPORTED")
                 return
 
     elif cluster_method in ["dbscan"]:
         model = _init_method(model=cluster_method, params=params)
         model.fit_predict(data[ft_cols])
     else:
-        print("WARNING the clustering method is not supported")
+        logger.warning("WARNING the clustering method is not supported")
         return
 
     # Once looped through and found the scores across the range of clusters then get final set based on the best score
@@ -199,10 +201,12 @@ def eval_clusters(
 
     params["n_clusters"] = n_clusters
     model = _init_method(model=method, params=params)
-    model.fit_predict(data[ft_cols])
+    pred_labels = model.fit_predict(data[ft_cols])
     data["Cluster"] = model.labels_
 
-    print("Silhouette Score: " + str(round(silhouette_score(data, model.labels_), 2)))
+    sil_score = silhouette_score(data, pred_labels)
+
+    print("Silhouette Score: " + str(round(sil_score, 2)))
     if type(model).__name__ == "Pipeline":
         if type(model.named_steps["model"]).__name__ == "KMeans":
             print("WSS Total: " + str(round(model.named_steps["model"].inertia_, 2)) + "\n")
@@ -218,8 +222,9 @@ def eval_clusters(
     base_cluster_stats = ceu.create_summary_table(
         data=data, plot_dims=plot_dims, summary_stats=summary_stats
     )
+    base_cluster_stats = round(base_cluster_stats,2)
     print("Base Cluster Stats \n")
-    print(round(base_cluster_stats.T, 2))
+    print(base_cluster_stats.T)
     print("\n\n")
 
     if run_stat_comps:
@@ -230,12 +235,12 @@ def eval_clusters(
             print("No significant differences found between clusters")
         else:
             print("Significance Testing Results \n")
-            print(str(sig_test_results) + "\n\n")
+            print(str(round(sig_test_results, 2)) + "\n\n")
             if post_hoc_comps.shape[0] == 0:
                 print("No pairwise significant difference")
             else:
                 print("Pairwise Differences \n")
-                print(str(post_hoc_comps) + "\n\n")
+                print(str(round(post_hoc_comps, 2)) + "\n\n")
 
     pu.plot_mean_cluster_scores(data=data, plot_scale=plot_scale)
     pu.plot_ft_relationships(data=data, plot_dims=plot_dims)
@@ -244,7 +249,7 @@ def eval_clusters(
         log_data = {
             "n_clusters":n_clusters
             ,"features":ft_cols
-            ,"Silhouette Score":round(silhouette_score(data, model.labels_), 2)
+            ,"Silhouette Score":round(sil_score, 2)
             ,"data":data
             ,"params": model.get_params()
             ,"base_cluster_stats":round(base_cluster_stats,2)
@@ -256,6 +261,8 @@ def eval_clusters(
             for k in model.named_steps.keys():
                 pipe_steps = pipe_steps + type(model.named_steps[k]).__name__ + " "
             log_data["pipe_steps"] = pipe_steps
+        else:
+            log_data["method"] = type(model).__name__
 
         if type(model).__name__ == "Pipeline":
             if type(model.named_steps["model"]).__name__ == "KMeans":
