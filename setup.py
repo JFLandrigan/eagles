@@ -22,8 +22,6 @@ setup(
         "scipy",
         "seaborn",
         "statsmodels",
-        "string",
-        "time",
     ],
     zip_safe=False,
 )
