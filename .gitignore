@@ -1,6 +1,7 @@
 *.pyc
 *.iml
 *.xml
+*.idea
 
 .ipynb_checkpoints/
 .idea/
