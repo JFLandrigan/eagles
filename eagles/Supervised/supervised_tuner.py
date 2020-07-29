@@ -152,7 +152,9 @@ def tune_test_model(
     mod = scv.best_estimator_
     params = mod.get_params()
     print("Parameters of the best model: \n")
-    print(mod.get_params())
+    for pr in mod.get_params():
+        print(pr + ' :' + str(mod.get_params()[pr]))
+
     print("\n")
 
     print("Performing model eval on best estimator")
