@@ -43,6 +43,48 @@ def tune_test_model(
     log_path=None,
     log_note=None,
 ):
+    """
+    Takes in input and output data, performs selected parameter tuning and then calls the model eval function to test
+    model with the best parameters on the desired outcomes
+    :param X: default None, expects pandas dataframe with names columns
+    :param y: default None, expects pandas series, list or numpy array with same number of samples as X
+    :param model: string or sklearn model object, Expects the string abbreviation of the model or a callable sklearn
+    model object. Note can also be a Pipeline object with a sklearn model as one of the steps.
+    :param params: dict default {}, Expects dictionary containing appropriatly prefixed paramters to search across
+    relative to the model
+    :param tune_metric: str defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the
+    paranmeter tuning phase.
+    :param eval_metrics: list defaults to 'f1' if classification or 'mse' if regression. Should contain list of metrics
+    wanted for the final model evaluation
+    :param num_cv: int default 5, Number of cross validation iterations to be run in model eval and tuning
+    :param pipe: sklearn pipeline object default None, If a pipline object is passed in along with a base model to model
+    argument the function will append the model to the pipeline.
+    :param scale: string default None, Expects either "standard" or "minmax". When set will create a sklearn pipeline
+    object with scale and sklearn model
+    :param select_features: dict default None, The expected dict should contain pass through arguments for the tuner
+    utils select features function. Note the selection happens pre tuning and not during it.
+    :param bins: list default None, For binary classification problems determines the number of granularity of the
+    probability bins used in the distribution by percent actual output
+    :param num_top_fts: int default None, Tells feature importance function to plot top X features. If none all feature
+    importances will be plotted
+    :param tuner: str default "random_cv", String argument defining the parameter tuning function to be used.
+    :param n_iterations: int default 15, used to determine the number of parameter settings that are selected for
+    tuning. This argument is ignored when "grid_cv" is used
+    :param get_ft_imp: boolean default True, tells model_eval whether or not to get and plot the feature
+    importance of the models
+    :param n_jobs: int default 1, Expects integer value of number of parallel process to run during model fitting.
+    :param random_seed: int default None, Expects integer value for the random seed to be passed into relative
+    functions and classes. If not passed will use np.random to set this value
+    :param binary: boolean default True, Flag to tell the functions whether or not is a binary classification problem.
+    If it is a regression problem this argument is ignored.
+    :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
+    keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
+    the logged out components.
+    :param log_name: str default None, prefix name of logged out data. Ignored if log is None
+    :param log_path: str default None, path to save log data to. Ignored if no log is None
+    :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
+    :return:
+    """
 
     if random_seed is None:
         random_seed = np.random.randint(1000, size=1)[0]
@@ -253,7 +295,8 @@ def model_eval(
     Model Eval function. Used to perform cross validation on model and is automatically called post tune_test_model
     :param X: pandas dataframe containing features for model training
     :param y: series or np array containing prediction values
-    :param model: Model object containing fit, predict, predict_proba attributes, sklearn pipeline object or string indicator of model to eval
+    :param model: Model object containing fit, predict, predict_proba attributes, sklearn pipeline object or
+    string indicator of model to eval
     :param params: dictionary containing parameters of model to fit on
     :param metrics: list of metrics to eval model on default is ['f1]
     :param bins: list of bin ranges to output the score to percent actual distribution
@@ -268,7 +311,7 @@ def model_eval(
     :param log_name: string name of the logger doc
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
-    :param tune_test:
+    :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
     :return:
     """
 
