@@ -339,7 +339,7 @@ def model_eval(
             + str(cnt)
             + " time: "
             + str(time.time() - cv_st)
-            + " \n \n"
+            + " \n"
         )
         cnt += 1
 
