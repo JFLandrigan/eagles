@@ -291,11 +291,11 @@ def eval_clusters(
     if log:
         log_data = {
             "n_clusters":n_clusters
-            ,"features":ft_cols
-            ,"Silhouette Score":round(sil_score, 2)
-            ,"data":data
-            ,"params": model.get_params()
-            ,"base_cluster_stats":round(base_cluster_stats,2)
+            , "features":ft_cols
+            , "Silhouette Score":round(sil_score, 2)
+            , "data":data
+            , "params": model.get_params()
+            , "base_cluster_stats":round(base_cluster_stats,2)
         }
 
         if type(model).__name__ == "Pipeline":
