@@ -11,7 +11,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def find_max_sil(res_dict):
+
+def _find_max_sil(res_dict):
     max_ind = res_dict["scores"].argmax()
     num_clusters = res_dict["n_clusters"][max_ind]
     max_sil_score = res_dict["scores"][max_ind]
@@ -41,7 +42,7 @@ def find_optimal_clusters(
     data=None,
     ft_cols=[],
     cluster_method="kmeans",
-    metric="min_sil",
+    metric="max_sil",
     min_num_clusters=2,
     max_num_clusters=10,
     params={},
@@ -56,6 +57,34 @@ def find_optimal_clusters(
     log_path=None,
     log_note=None,
 ):
+    """
+    Takes in data and model and fits specified unsupervised model to the data. Then uses the specified metric to find
+    the optimal number of clusters. The optimal number of clusters is passed to eval_clusters to evaluate the
+    clusters for differences
+    :param data: default None, expects pandas dataframe with names columns
+    :param ft_cols: default empty list: expects list containing string names of the columns to use for clustering.
+    If default then uses all cols
+    :param cluster_method: default "kmeans", expects string name of the model to be applied (i.e. kmeans,
+    agglomerativeclustering, dbscan
+    :param metric: default "max_sil", expects string for metric to determine the optimal number of clusters
+    :param min_num_clusters: default 2, int specifying the lower bound of the number clusters
+    :param max_num_clusters: default 10, int specifyuing the upper bound of the number clusters
+    :param params: default empty dict, paramter dictionary for the model being tested
+    :param scale: default None, expects either "minmax", "standard" or sklearn scaler object
+    :param plot_dims: default empty list, expects list of dimensions to plot the result clusters across
+    :param summary_stats: default empty list, expects list of grouping statistics to apply to data \
+    during cluster comparisons
+    :param run_stat_comps: default True, boolean indicating whether or not to run cluster comparisons
+    :param plot_scale: default None, expects either "minmax" or "standard" to indicate scaling of features for plots
+    :param random_seed: default None, int specifying the random seed value for the analysis
+    :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
+    keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
+    the logged out components.
+    :param log_name: str default None, prefix name of logged out data. Ignored if log is None
+    :param log_path: str default None, path to save log data to. Ignored if no log is None
+    :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
+    :return: returns pandas df with attached cluster labels
+    """
 
     if min_num_clusters == max_num_clusters:
         logger.warning("WARNING MIN AND MAX NUM CLUSTERS SHOULD NOT BE EQUAL")
@@ -97,7 +126,7 @@ def find_optimal_clusters(
 
             pred_labels = model.fit_predict(data[ft_cols])
 
-            if metric in ["max_sil", "knee_sil"]:
+            if metric in ["max_sil"]:
                 res_dict["scores"] = np.append(
                     res_dict["scores"], silhouette_score(data, pred_labels)
                 )
@@ -118,7 +147,7 @@ def find_optimal_clusters(
     if cluster_method in ["kmeans", "agglomerativeclustering"]:
 
         if metric == "max_sil":
-            opt_n_clusters, max_sil_score = find_max_sil(res_dict=res_dict)
+            opt_n_clusters, max_sil_score = _find_max_sil(res_dict=res_dict)
             opt_n_clusters = int(opt_n_clusters)
             print("Best silhoutte score: " + str(max_sil_score))
         elif metric == "knee_wss":
@@ -127,14 +156,6 @@ def find_optimal_clusters(
                 y=res_dict["scores"],
                 curve="convex",
                 direction="decreasing",
-            )
-            opt_n_clusters = int(kn.knee)
-        elif metric == "knee_sil":
-            kn = KneeLocator(
-                x=res_dict["n_clusters"],
-                y=res_dict["scores"],
-                curve="concave",
-                direction="increasing",
             )
             opt_n_clusters = int(kn.knee)
 
@@ -167,7 +188,7 @@ def find_optimal_clusters(
 def eval_clusters(
     data=None,
     n_clusters=2,
-    method=None,
+    method="kmeans",
     params={},
     scale=None,
     ft_cols=[],
@@ -180,6 +201,28 @@ def eval_clusters(
     log_path=None,
     log_note=None,
 ):
+    """
+    Function to find and compare clusters across specified dimensions
+    :param data:
+    :param n_clusters: default 2, int specifying the number of desired clusters
+    :param method: default "kmeans", expects string name of the model to be applied (i.e. kmeans,
+    agglomerativeclustering, dbscan
+    :param params: default empty dict, paramter dictionary for the model being used
+    :param scale: default None, expects either "minmax", "standard" or sklearn scaler object
+    :param ft_cols: default empty list: expects list containing string names of the columns to use for clustering.
+    :param plot_dims: default empty list, expects list of dimensions to plot the result clusters across
+    :param summary_stats: default empty list, expects list of grouping statistics to apply to data \
+    during cluster comparisons
+    :param run_stat_comps: default True, boolean indicating whether or not to run cluster comparisons
+    :param plot_scale: default None, expects either "minmax" or "standard" to indicate scaling of features for plots
+    :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
+    keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
+    the logged out components.
+    :param log_name: str default None, prefix name of logged out data. Ignored if log is None
+    :param log_path: str default None, path to save log data to. Ignored if no log is None
+    :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
+    :return: returns pandas df with attached cluster labels
+    """
 
     if len(ft_cols) == 0:
         ft_cols = [col for col in data.columns]
