@@ -140,7 +140,7 @@ def find_optimal_clusters(
         model = _init_method(model=cluster_method, params=params)
         model.fit_predict(data[ft_cols])
     else:
-        logger.warning("WARNING the clustering method is not supported")
+        logger.warning("Non supported model passed in")
         return
 
     # Once looped through and found the scores across the range of clusters then get final set based on the best score
@@ -187,11 +187,11 @@ def find_optimal_clusters(
 
 def eval_clusters(
     data=None,
+    ft_cols=[],
     n_clusters=2,
     method="kmeans",
     params={},
     scale=None,
-    ft_cols=[],
     plot_dims=[],
     summary_stats=[],
     run_stat_comps=True,
@@ -203,13 +203,13 @@ def eval_clusters(
 ):
     """
     Function to find and compare clusters across specified dimensions
-    :param data:
+    :param data:  default None, expects pandas dataframe with names columns
+    :param ft_cols: default empty list: expects list containing string names of the columns to use for clustering.
     :param n_clusters: default 2, int specifying the number of desired clusters
     :param method: default "kmeans", expects string name of the model to be applied (i.e. kmeans,
     agglomerativeclustering, dbscan
     :param params: default empty dict, paramter dictionary for the model being used
     :param scale: default None, expects either "minmax", "standard" or sklearn scaler object
-    :param ft_cols: default empty list: expects list containing string names of the columns to use for clustering.
     :param plot_dims: default empty list, expects list of dimensions to plot the result clusters across
     :param summary_stats: default empty list, expects list of grouping statistics to apply to data \
     during cluster comparisons
@@ -242,7 +242,9 @@ def eval_clusters(
         data = pd.DataFrame(data)
         data.columns = ft_cols
 
-    params["n_clusters"] = n_clusters
+    if method in ["kmeans", "agglomerativeclustering"] and "n_cluster" not in params.keys():
+        params["n_clusters"] = n_clusters
+
     model = _init_method(model=method, params=params)
     pred_labels = model.fit_predict(data[ft_cols])
     data["Cluster"] = model.labels_

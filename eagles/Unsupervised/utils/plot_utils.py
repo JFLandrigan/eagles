@@ -14,7 +14,7 @@ def plot_dendogram(data):
 
 
 def plot_score_curve(data=None, metric="max_sil", opt_n_clusters=None):
-    if metric in ["max_sil", "knee_sil"]:
+    if metric in ["max_sil"]:
         y_val = "Silhouette Scores"
     else:
         y_val = "WSS Totals"
@@ -23,12 +23,16 @@ def plot_score_curve(data=None, metric="max_sil", opt_n_clusters=None):
         {"Number of Clusters (k)": data["n_clusters"], "y": data["scores"]}
     )
 
+    print("Max y: " + str(tmp["y"].max()))
+    print("y vals: " + str(tmp["y"]))
+
     _ = plt.figure(figsize=(10, 10))
     ax = sns.lmplot(x="Number of Clusters (k)", y="y", data=tmp, fit_reg=False)
     _ = ax.set(xlabel="Number of Clusters (k)", ylabel=y_val)
-    _ = plt.axvline(opt_n_clusters, 0, tmp["y"].max())
+    _ = plt.axvline(opt_n_clusters)
     _ = plt.title("Number of Clusters by " + y_val)
     _ = plt.show()
+
     return
 
 
