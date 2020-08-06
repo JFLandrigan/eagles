@@ -90,6 +90,13 @@ def tune_test_model(
         random_seed = np.random.randint(1000, size=1)[0]
         print("Random Seed Value: " + str(random_seed))
 
+    # init the model and define the problem type (linear and svr don't take random_state args)
+    if model not in ["linear", "svr"] and not params:
+        params = {"random_state": random_seed}
+    mod_scv = mi.init_model(model=model, params=params)
+
+    problem_type = mi.define_problem_type(mod_scv)
+
     if select_features:
         print("Selecting features")
 
@@ -115,23 +122,15 @@ def tune_test_model(
     else:
         features = list(X.columns)
 
-    # init the model and define the problem type (linear and svr don't take random_state args)
-    if model not in ["linear", "svr"] and not params:
-        params = {"random_state": random_seed}
-    mod_scv = mi.init_model(model=model, params=params)
+    if tune_metric is None and problem_type == "clf":
+        tune_metric = "f1"
+    else:
+        tune_metric = "neg_mean_squared_error"
 
-    if tune_metric is None or len(eval_metrics) == 0:
-        problem_type = mi.define_problem_type(mod_scv)
-
-        if tune_metric is None and problem_type == "clf":
-            tune_metric = "f1"
-        else:
-            tune_metric = "neg_mean_squared_error"
-
-        if len(eval_metrics) == 0 and problem_type == "clf":
-            eval_metrics = ["f1"]
-        else:
-            eval_metrics = ["mse"]
+    if len(eval_metrics) == 0 and problem_type == "clf":
+        eval_metrics = ["f1"]
+    else:
+        eval_metrics = ["mse"]
 
     if pipe and scale:
         logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
