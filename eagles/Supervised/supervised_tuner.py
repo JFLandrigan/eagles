@@ -230,11 +230,11 @@ def tune_test_model(
 
         if isinstance(log, list):
             log_path, log_name = lu.construct_save_dir(
-                fl_path=None, fl_name=None, model_name=None
+                fl_path=log_path, fl_name=log_name, model_name=log_data["model"]
             )
         else:
             log_path, log_name, timestr = lu.construct_save_path(
-                fl_path=None, fl_name=None, model_name=None
+                fl_path=log_path, fl_name=log_name, model_name=log_data["model"]
             )
 
         if isinstance(log, list):
@@ -260,13 +260,12 @@ def tune_test_model(
                     lu.pickle_data(data=mod, fl_path=log_path, fl_name=log_name, data_type=x)
                 else:
                     logger.warning("LOG TYPE NOT SUPPORTED: " + x)
-
-        if log == "log":
+        elif log == "log":
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=True
             )
         else:
-            logger.warning("LOG TYPE NOT SUPPORTED: " + log)
+            logger.warning("LOG TYPE NOT SUPPORTED: " + str(log))
 
     return [mod, params, features]
 
@@ -382,11 +381,10 @@ def model_eval(
             + str(cnt)
             + " time: "
             + str(time.time() - cv_st)
-            + " \n"
         )
         cnt += 1
 
-    print("CV Run Scores")
+    print("\nCV Run Scores")
     for metric in metrics:
         print(metric + " scores: " + str(metric_dictionary[metric + "_scores"]))
         print(metric + " mean: " + str(metric_dictionary[metric + "_scores"].mean()))
@@ -470,6 +468,6 @@ def model_eval(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
 
-            return log_data
+            return
 
     return
