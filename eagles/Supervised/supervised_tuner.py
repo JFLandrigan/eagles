@@ -229,17 +229,16 @@ def tune_test_model(
             log_data["note"] = log_note
 
         if isinstance(log, list):
-            log_path, log_name = lu.construct_save_dir(
-                fl_path=log_path, fl_name=log_name, model_name=log_data["model"]
+            log_path, log_name, timestr = lu.construct_save_path(
+                fl_path=log_path, fl_name=log_name, model_name=log_data["model"], save_dir=True
             )
         else:
             log_path, log_name, timestr = lu.construct_save_path(
-                fl_path=log_path, fl_name=log_name, model_name=log_data["model"]
+                fl_path=log_path, fl_name=log_name, model_name=log_data["model"], save_dir=False
             )
 
         if isinstance(log, list):
             for x in log:
-                print("Saving out the: " + x)
                 if x == "log":
                     lu.log_results(
                         fl_name=log_name,
