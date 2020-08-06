@@ -136,6 +136,8 @@ def find_optimal_clusters(
                 logger.warning("WARNING METRIC NOT SUPPORTED")
                 return
 
+            print("Finished " + str(i) + " cluster/s model")
+
     elif cluster_method in ["dbscan"]:
         model = _init_method(model=cluster_method, params=params)
         model.fit_predict(data[ft_cols])
