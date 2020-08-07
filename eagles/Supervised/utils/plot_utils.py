@@ -32,11 +32,11 @@ def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None, plot_ti
     return
 
 
-def plot_feature_correlations(df=None):
+def plot_feature_correlations(df=None, plot_title=""):
     corr = df.corr()
 
     # Generate a mask for the upper triangle
-    mask = np.triu(np.ones_like(corr, dtype=np.bool))
+    # mask = np.triu(np.ones_like(corr, dtype=np.bool))
 
     # Set up the matplotlib figure
     f, ax = plt.subplots(figsize=(11, 9))
@@ -45,16 +45,19 @@ def plot_feature_correlations(df=None):
     cmap = sns.diverging_palette(240, 10, as_cmap=True)
 
     # Draw the heatmap with the mask and correct aspect ratio
-    sns.heatmap(
+    ax = sns.heatmap(
         corr,
-        mask=mask,
+        # mask=mask,
         cmap=cmap,
-        vmax=0.3,
+        vmin=corr.values.min(),
+        vmax=corr.values.max(),
         center=0,
         square=True,
         linewidths=0.5,
         cbar_kws={"shrink": 0.5},
     )
+
+    ax.set_title(plot_title)
 
     return
 

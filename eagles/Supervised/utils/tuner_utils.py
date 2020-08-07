@@ -66,7 +66,10 @@ def select_features(
         ]
 
         if plot_ft_corr:
-            pu.plot_feature_correlations(df=X[corr_fts].copy(deep=True))
+            pu.plot_feature_correlations(
+                df=X[corr_fts].copy(deep=True),
+                plot_title="Feature Correlation Pre-Drop",
+            )
 
         # drop the correlation features first then fit the models
         print("Features dropping due to high correlation: " + str(corr_drop) + " \n")

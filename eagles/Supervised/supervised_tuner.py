@@ -194,10 +194,20 @@ def tune_test_model(
     mod = scv.best_estimator_
     params = mod.get_params()
     print("Parameters of the best model: \n")
-    for pr in mod.get_params():
-        print(pr + " :" + str(mod.get_params()[pr]))
+    if type(mod).__name__ == "Pipeline":
+        print(type(mod.named_steps["clf"]).__name__ + " Parameters")
+        print(str(mod.named_steps["clf"].get_params()) + "\n")
 
-    print("\n")
+    elif "Voting" in type(mod).__name__:
+        print(
+            type(mod).__name__ + " weights: " + str(mod.get_params()["weights"]) + "\n"
+        )
+        for c in mod.estimators_:
+            print(type(c.named_steps["clf"]).__name__ + " Parameters")
+            print(str(c.named_steps["clf"].get_params()) + "\n")
+    else:
+        print(type(mod).__name__ + " Parameters")
+        print(str(mod.get_params()) + "\n")
 
     print("Performing model eval on best estimator")
 
@@ -464,12 +474,10 @@ def model_eval(
         # TODO add in funcitonality to log out the model and the data in a dir just like the tune and tester
         if tune_test:
             return log_data
-
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-
             return
 
     return
