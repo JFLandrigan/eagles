@@ -21,18 +21,20 @@ def construct_save_path(fl_path=None, fl_name=None, model_name=None, save_dir=Fa
     # if fl path is none and creating save dir for mult objects then create data_modelname directory in utils
     elif fl_path is None and save_dir:
         fl_path = (
-                os.path.abspath(os.path.dirname(__file__))
-                + config.ext_char
-                + "data_"
-                + model_name
-                + "_"
-                + timestr
-                + config.ext_char
+            os.path.abspath(os.path.dirname(__file__))
+            + config.ext_char
+            + "data_"
+            + model_name
+            + "_"
+            + timestr
+            + config.ext_char
         )
 
     # if fl path passed in and creating a save dir for mult items then tack on model name and time to end of file path
     elif fl_path and save_dir:
-        tmp_fl_path = fl_path + config.ext_char + model_name + '_' + timestr + config.ext_char
+        tmp_fl_path = (
+            fl_path + config.ext_char + model_name + "_" + timestr + config.ext_char
+        )
         fl_path = tmp_fl_path
 
     # if file name is none then create general log name using model name and time stamp
@@ -51,8 +53,6 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
         fl_name=fl_name, fl_path=fl_path, model_name=log_data["model"]
     )
     save_path = fl_path + fl_name
-
-    print("File path for data log: " + save_path)
 
     f = open(save_path, "w")
 
@@ -120,8 +120,8 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
 
 def pickle_data(data=None, fl_path=None, fl_name=None, data_type=None):
 
-    fname = data_type + '_' + fl_name
-    fname = fname.replace('txt', 'pkl')
+    fname = data_type + "_" + fl_name
+    fname = fname.replace("txt", "pkl")
 
     # save out the data
     with open(fl_path + fname, "wb") as handle:
