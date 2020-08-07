@@ -108,16 +108,17 @@ def select_features(
         print("Features dropping from low importance: " + str(imp_drop) + " \n")
 
         if plot_ft_importance:
-            pu.plot_feature_importance(ft_df=ftImp_df, mod_type=type(forest).__name__)
+            pu.plot_feature_importance(
+                ft_df=ftImp_df,
+                mod_type=type(forest).__name__,
+                plot_title="Feature Selection Importance",
+            )
 
     if "regress" in methods:
 
         if problem_type == "clf":
             lin_mod = LogisticRegression(
-                penalty="l1",
-                solver="liblinear",
-                random_state=random_seed,
-                n_jobs=n_jobs,
+                penalty="l1", solver="liblinear", random_state=random_seed
             )
         else:
             lin_mod = Lasso(random_state=random_seed)
@@ -139,6 +140,13 @@ def select_features(
 
         lin_drop = list(tmp["Feature"][tmp["Coef"] == 0])
         print("Features dropping from l1 regression: " + str(lin_drop) + " \n")
+
+        if plot_ft_importance:
+            pu.plot_feature_importance(
+                ft_df=tmp,
+                mod_type=type(lin_mod).__name__,
+                plot_title="Feature Selection Importance",
+            )
 
     # get the final drop and feature sets
     drop_fts = list(set(imp_drop + lin_drop + corr_drop))
@@ -251,6 +259,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
             ft_df=ft_imp_df,
             mod_type=type(mod.named_steps["clf"]).__name__,
             num_top_fts=num_top_fts,
+            plot_title="Model Importance",
         )
 
     elif type(mod).__name__ == "VotingClassifier":
@@ -277,6 +286,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
                     ft_df=tmp_ft_imp_df,
                     mod_type=type(c.named_steps["clf"]).__name__,
                     num_top_fts=num_top_fts,
+                    plot_title="Model Importance",
                 )
             else:
                 tmp_ft_imp_df = get_feature_importances(
@@ -286,6 +296,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
                     ft_df=tmp_ft_imp_df,
                     mod_type=type(c).__name__,
                     num_top_fts=num_top_fts,
+                    plot_title="Model Importance",
                 )
 
             tmp_ft_imp_df.columns = ["features", "value"]
@@ -300,7 +311,10 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
             mod_type=type(mod).__name__, mod=mod, features=list(X.columns)
         )
         pu.plot_feature_importance(
-            ft_df=ft_imp_df, mod_type=type(mod).__name__, num_top_fts=num_top_fts,
+            ft_df=ft_imp_df,
+            mod_type=type(mod).__name__,
+            num_top_fts=num_top_fts,
+            plot_title="Model Importance",
         )
 
     return ft_imp_df

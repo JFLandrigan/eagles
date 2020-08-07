@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 sns.set_style("whitegrid")
 
 
-def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None):
+def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None, plot_title=""):
     if num_top_fts:
         ft_df = ft_df.head(num_top_fts).copy(deep=True)
 
@@ -17,7 +17,8 @@ def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None):
         or ("DecisionTree" in mod_type)
     ):
         plt.figure(figsize=(10, 10), dpi=80, facecolor="w", edgecolor="k")
-        sns.barplot(x="Importance", y="Feature", data=ft_df)
+        ax = sns.barplot(x="Importance", y="Feature", data=ft_df)
+        ax.set_title(plot_title)
 
     elif (
         ("Regression" in mod_type)
@@ -25,7 +26,8 @@ def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None):
         or (mod_type == "ElasticNet")
     ):
         plt.figure(figsize=(10, 10), dpi=80, facecolor="w", edgecolor="k")
-        sns.barplot(x="Coef", y="Feature", data=ft_df)
+        ax = sns.barplot(x="Coef", y="Feature", data=ft_df)
+        ax.set_title(plot_title)
 
     return
 
