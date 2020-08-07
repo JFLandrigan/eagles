@@ -190,7 +190,6 @@ def tune_test_model(
         return
 
     scv.fit(X, y)
-    print("Best score for grid search: " + str(scv.best_score_))
 
     mod = scv.best_estimator_
     params = mod.get_params()
