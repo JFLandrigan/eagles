@@ -17,7 +17,9 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 def tune_test_model(
     X=None,
@@ -104,7 +106,7 @@ def tune_test_model(
             X=X,
             y=y,
             methods=select_features["methods"],
-            problem_type="clf",
+            problem_type=problem_type,
             model_pipe=select_features["model_pipe"],
             imp_thresh=select_features["imp_thresh"],
             corr_thresh=select_features["corr_thresh"],
@@ -129,7 +131,7 @@ def tune_test_model(
 
     if len(eval_metrics) == 0 and problem_type == "clf":
         eval_metrics = ["f1"]
-    else:
+    elif len(eval_metrics) == 0 and problem_type == "regress":
         eval_metrics = ["mse"]
 
     if pipe and scale:
@@ -194,7 +196,7 @@ def tune_test_model(
     params = mod.get_params()
     print("Parameters of the best model: \n")
     for pr in mod.get_params():
-        print(pr + ' :' + str(mod.get_params()[pr]))
+        print(pr + " :" + str(mod.get_params()[pr]))
 
     print("\n")
 
@@ -229,11 +231,17 @@ def tune_test_model(
 
         if isinstance(log, list):
             log_path, log_name, timestr = lu.construct_save_path(
-                fl_path=log_path, fl_name=log_name, model_name=log_data["model"], save_dir=True
+                fl_path=log_path,
+                fl_name=log_name,
+                model_name=log_data["model"],
+                save_dir=True,
             )
         else:
             log_path, log_name, timestr = lu.construct_save_path(
-                fl_path=log_path, fl_name=log_name, model_name=log_data["model"], save_dir=False
+                fl_path=log_path,
+                fl_name=log_name,
+                model_name=log_data["model"],
+                save_dir=False,
             )
 
         if isinstance(log, list):
@@ -255,7 +263,9 @@ def tune_test_model(
                         data=tmp_data, fl_path=log_path, fl_name=log_name, data_type=x
                     )
                 elif x == "mod":
-                    lu.pickle_data(data=mod, fl_path=log_path, fl_name=log_name, data_type=x)
+                    lu.pickle_data(
+                        data=mod, fl_path=log_path, fl_name=log_name, data_type=x
+                    )
                 else:
                     logger.warning("LOG TYPE NOT SUPPORTED: " + x)
         elif log == "log":
@@ -318,6 +328,7 @@ def model_eval(
 
     mod = mi.init_model(model=model, params=params)
     problem_type = mi.define_problem_type(mod=mod)
+
     if len(metrics) == 0:
         if problem_type == "clf":
             metrics = ["f1"]
@@ -374,12 +385,7 @@ def model_eval(
             avg=avg,
         )
 
-        print(
-            "Finished cv run: "
-            + str(cnt)
-            + " time: "
-            + str(time.time() - cv_st)
-        )
+        print("Finished cv run: " + str(cnt) + " time: " + str(time.time() - cv_st))
         cnt += 1
 
     print("\nCV Run Scores")
@@ -454,13 +460,12 @@ def model_eval(
         if get_ft_imp:
             log_data["ft_imp_df"] = ft_imp_df
 
-
         # if called from tune test then return the log data for final appending before logout
         # else log out the data and then return the final dictionary
         # TODO add in funcitonality to log out the model and the data in a dir just like the tune and tester
         if tune_test:
             return log_data
-        
+
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False

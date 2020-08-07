@@ -14,10 +14,12 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 def define_problem_type(mod=None):
+
     if type(mod).__name__ in config.clf_models:
         problem_type = "clf"
     elif type(mod).__name__ in config.regress_models:
@@ -28,8 +30,11 @@ def define_problem_type(mod=None):
         else:
             problem_type = "regress"
     else:
-        logger.warning("WARNING COULD NOT INFER PROBLEM TYPE. ENSURE MODEL IS SUPPORTED")
+        logger.warning(
+            "WARNING COULD NOT INFER PROBLEM TYPE. ENSURE MODEL IS SUPPORTED"
+        )
         return
+
     return problem_type
 
 
