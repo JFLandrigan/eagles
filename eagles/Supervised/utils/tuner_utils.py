@@ -286,7 +286,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
                     ft_df=tmp_ft_imp_df,
                     mod_type=type(c.named_steps["clf"]).__name__,
                     num_top_fts=num_top_fts,
-                    plot_title=type(mod.named_steps["clf"]).__name__
+                    plot_title=type(c.named_steps["clf"]).__name__
                     + " Model Importance",
                 )
             else:
@@ -297,8 +297,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
                     ft_df=tmp_ft_imp_df,
                     mod_type=type(c).__name__,
                     num_top_fts=num_top_fts,
-                    plot_title=type(mod.named_steps["clf"]).__name__
-                    + " Model Importance",
+                    plot_title=type(c).__name__ + " Model Importance",
                 )
 
             tmp_ft_imp_df.columns = ["features", "value"]
@@ -316,7 +315,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
             ft_df=ft_imp_df,
             mod_type=type(mod).__name__,
             num_top_fts=num_top_fts,
-            plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
+            plot_title=type(mod).__name__ + " Model Importance",
         )
 
     return ft_imp_df
