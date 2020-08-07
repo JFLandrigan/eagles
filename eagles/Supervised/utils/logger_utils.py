@@ -74,10 +74,8 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
 
     f.write("Params of model: " + "\n")
     for pr in log_data["params"]:
-        f.write(pr + " : " + str(log_data["params"][pr]) + "\n")
+        f.write(str(pr) + "\n")
     f.write("\n\n")
-
-    # f.write("Params of model: " + str(log_data["params"]) + " \n \n")
 
     tmp_metric_dict = log_data["metrics"]
     for metric in tmp_metric_dict.keys():

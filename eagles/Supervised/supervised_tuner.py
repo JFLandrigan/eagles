@@ -25,7 +25,7 @@ def tune_test_model(
     X=None,
     y=None,
     model=None,
-    params={},
+    params=None,
     tune_metric=None,
     eval_metrics=[],
     num_cv=5,
@@ -191,6 +191,8 @@ def tune_test_model(
 
     scv.fit(X, y)
 
+    test_params = params.copy()
+
     mod = scv.best_estimator_
     params = mod.get_params()
     print("Parameters of the best model: \n")
@@ -202,6 +204,7 @@ def tune_test_model(
         print(
             type(mod).__name__ + " weights: " + str(mod.get_params()["weights"]) + "\n"
         )
+        # TODO need to account for if not pipeline but just estimator
         for c in mod.estimators_:
             print(type(c.named_steps["clf"]).__name__ + " Parameters")
             print(str(c.named_steps["clf"].get_params()) + "\n")
@@ -233,7 +236,7 @@ def tune_test_model(
 
     if log:
 
-        log_data["test_params"] = params
+        log_data["test_params"] = test_params
         log_data["tune_metric"] = tune_metric
         if log_note:
             log_data["note"] = log_note
@@ -443,9 +446,32 @@ def model_eval(
         log_data = {
             "features": list(X.columns),
             "random_seed": random_seed,
-            "params": mod.get_params(),
             "metrics": metric_dictionary,
         }
+
+        log_data["params"] = list()
+        if type(mod).__name__ == "Pipeline":
+            log_data["params"].append(
+                [
+                    type(mod.named_steps["clf"]).__name__,
+                    str(mod.named_steps["clf"].get_params()),
+                ]
+            )
+
+        elif "Voting" in type(mod).__name__:
+            log_data["params"].append(
+                str([type(mod).__name__, str(mod.get_params()["weights"])])
+            )
+            # TODO need to account for if not pipeline but just estimator
+            for c in mod.estimators_:
+                log_data["params"].append(
+                    [
+                        type(c.named_steps["clf"]).__name__,
+                        str(c.named_steps["clf"].get_params()),
+                    ]
+                )
+        else:
+            log_data["params"].append([type(mod).__name__, str(mod.get_params())])
 
         if problem_type == "clf":
             log_data["cf"] = cf
