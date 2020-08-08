@@ -17,7 +17,12 @@ For examples of how to used the functions contained within the package see the f
 
 
 ## Install and How to use it?
-**This package is still under heavy development and testing. ** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles/tree/master ```  .  Once installed it can be imported like any other python package. 
+**This package is still under heavy development and testing. ** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles/tree/master ```  .  Once installed it can be imported like any other python package. For example:
+
+```
+from eagles.Supervised import supervised_tuner as st
+from eagles.Unsupervised import unsupervised_tuner as ut
+```
 
 
 
@@ -41,6 +46,8 @@ Note that the functions primarily support sklearn model objects however if a mod
 
 ## Metric Options
 
+When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is used for the parameter search and the eval_metric argument is used for the final model evaluation (eval metrics should be passed in as a list). For ```supervised_tuner.model_eval()``` the metrics argument is used to tell the function what metrics to use (these should be passed in a list). If no metrics are passed in (for tuning and/or eval) classification problems will default to 'f1' and regression problems will default to 'mse'. 
+
 | Classification                                               | Regression                                                   |
 | :----------------------------------------------------------- | :----------------------------------------------------------- |
 | 'accuracy'                                                   | 'mse' - mean square error                                    |
@@ -60,7 +67,7 @@ Note that the functions primarily support sklearn model objects however if a mod
 
 
 
-## How to pass in parameters for tune_test_model()
+## How to pass in parameters for supervised_tuner.tune_test_model()
 
 - Single model: pass in relative parameters as a dictionary with key (parameter) value (listed parameter setting) pairs
 
@@ -109,8 +116,56 @@ lr_pipe = Pipeline([('impute', SimpleImputer(strategy='median'))
 
 ## Logging
 
-The supervised_tuner model_eval() and tune_test_model() allow for logging of the models being tested.
-Note that is no log path is passed in a data subdirectory will be created in eagles/eagles/Supervised/utils/
+The supervised_tuner ```model_eval()``` allows the used to log out a text file of the models performance and ```tune_test_model()``` allows the user to log out a text file containing relevant information for the call (e.g. tuning parameters, and model performance), the final model object and the data used for training and testing. ```model_eval()``` does not currently allow for data and model logging. See the following examples for argument definitions: 
+
+```
+# Model evaluation
+st.model_eval(
+    X=iris[fts],
+    y=iris['dummy'],
+    model='logistic',
+    params={'solver':'liblinear'},
+    metrics=["accuracy", "f1", "roc_auc"],
+    bins=None,
+    pipe=None,
+    scale=None,
+    num_top_fts=None,
+    num_cv=5,
+    get_ft_imp=True,
+    random_seed=4,
+    binary=True,
+    log="log",
+    log_name="model_eval_test.txt",
+    log_path=None,
+    log_note="This is a test of the model eval function"
+)
+
+# Tuning and testing a model (Note if only a log is wanted the argument can be set to 'log')
+clf, params, clf_fts = st.tune_test_model(X=iris[fts]
+                                            ,y=iris['dummy']
+                                            ,model=vc_clf
+                                            ,params=pars
+                                            ,tune_metric="f1"
+                                            ,eval_metrics=["accuracy", "f1", "precision"]
+                                            ,num_cv=5
+                                            ,pipe=None
+                                            ,scale=None
+                                            ,select_features=select_features_dict
+                                            ,bins=None
+                                            ,num_top_fts=None
+                                            ,tuner="random_cv"
+                                            ,n_iterations=15
+                                            ,get_ft_imp=True
+                                            ,n_jobs=2
+                                            ,random_seed=None
+                                            ,binary=True
+                                            ,log=["log","mod","data"]
+                                            ,log_name="model_tunetest_test.txt"
+                                            ,log_path=None
+                                            ,log_note=note)
+```
+
+**Note that if no log path is passed in a data subdirectory will be created in eagles/eagles/Supervised/utils/**
 
 
 
