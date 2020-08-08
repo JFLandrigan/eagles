@@ -204,10 +204,13 @@ def tune_test_model(
         print(
             type(mod).__name__ + " weights: " + str(mod.get_params()["weights"]) + "\n"
         )
-        # TODO need to account for if not pipeline but just estimator
         for c in mod.estimators_:
-            print(type(c.named_steps["clf"]).__name__ + " Parameters")
-            print(str(c.named_steps["clf"].get_params()) + "\n")
+            if type(c).__name__ == "Pipeline":
+                print(type(c.named_steps["clf"]).__name__ + " Parameters")
+                print(str(c.named_steps["clf"].get_params()) + "\n")
+            else:
+                print(type(c).__name__ + " Parameters")
+                print(str(c.get_params()) + "\n")
     else:
         print(type(mod).__name__ + " Parameters")
         print(str(mod.get_params()) + "\n")
@@ -447,9 +450,9 @@ def model_eval(
             "features": list(X.columns),
             "random_seed": random_seed,
             "metrics": metric_dictionary,
+            "params": list(),
         }
 
-        log_data["params"] = list()
         if type(mod).__name__ == "Pipeline":
             log_data["params"].append(
                 [
@@ -462,14 +465,18 @@ def model_eval(
             log_data["params"].append(
                 str([type(mod).__name__, str(mod.get_params()["weights"])])
             )
-            # TODO need to account for if not pipeline but just estimator
             for c in mod.estimators_:
-                log_data["params"].append(
-                    [
-                        type(c.named_steps["clf"]).__name__,
-                        str(c.named_steps["clf"].get_params()),
-                    ]
-                )
+                if type(c).__name__ == "Pipeline":
+                    log_data["params"].append(
+                        [
+                            type(c.named_steps["clf"]).__name__,
+                            str(c.named_steps["clf"].get_params()),
+                        ]
+                    )
+                else:
+                    log_data["params"].append(
+                        [type(c).__name__, str(c.get_params()),]
+                    )
         else:
             log_data["params"].append([type(mod).__name__, str(mod.get_params())])
 
