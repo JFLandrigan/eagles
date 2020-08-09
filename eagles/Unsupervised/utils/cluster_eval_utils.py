@@ -71,7 +71,7 @@ def run_cluster_comps(data=None, ft_cols=None):
         post_hocs = post_hocs[["Feature", "A", "B", "diff", "p-tukey", "hedges"]]
         post_hocs.rename(
             columns={
-                "diff": "Difference Between Means",
+                "diff": "Diff Between Means",
                 "p-tukey": "p Val",
                 "hedges": "Effect Size",
             },

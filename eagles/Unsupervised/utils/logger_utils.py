@@ -51,8 +51,8 @@ def construct_save_path(fl_path=None, fl_name=None, model_name=None):
 
 def log_results(fl_name=None, fl_path=None, log_data=None):
 
-    fl_path, fl_name = construct_save_path(
-        fl_name=fl_name, fl_path=fl_path, model_name=log_data["model"]
+    fl_path, fl_name, timestr = construct_save_path(
+        fl_name=fl_name, fl_path=fl_path, model_name=log_data["method"]
     )
     save_path = fl_path + fl_name
 

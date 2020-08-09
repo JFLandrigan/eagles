@@ -16,12 +16,16 @@ from skopt import BayesSearchCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def tune_test_model(
     X=None,
     y=None,
     model=None,
-    params={},
+    params=None,
     tune_metric=None,
     eval_metrics=[],
     num_cv=5,
@@ -41,10 +45,59 @@ def tune_test_model(
     log_path=None,
     log_note=None,
 ):
+    """
+    Takes in input and output data, performs selected parameter tuning and then calls the model eval function to test
+    model with the best parameters on the desired outcomes
+    :param X: default None, expects pandas dataframe with names columns
+    :param y: default None, expects pandas series, list or numpy array with same number of samples as X
+    :param model: string or sklearn model object, Expects the string abbreviation of the model or a callable sklearn
+    model object. Note can also be a Pipeline object with a sklearn model as one of the steps.
+    :param params: dict default {}, Expects dictionary containing appropriatly prefixed paramters to search across
+    relative to the model
+    :param tune_metric: str defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the
+    paranmeter tuning phase.
+    :param eval_metrics: list defaults to 'f1' if classification or 'mse' if regression. Should contain list of metrics
+    wanted for the final model evaluation
+    :param num_cv: int default 5, Number of cross validation iterations to be run in model eval and tuning
+    :param pipe: sklearn pipeline object default None, If a pipline object is passed in along with a base model to model
+    argument the function will append the model to the pipeline.
+    :param scale: string default None, Expects either "standard" or "minmax". When set will create a sklearn pipeline
+    object with scale and sklearn model
+    :param select_features: dict default None, The expected dict should contain pass through arguments for the tuner
+    utils select features function. Note the selection happens pre tuning and not during it.
+    :param bins: list default None, For binary classification problems determines the number of granularity of the
+    probability bins used in the distribution by percent actual output
+    :param num_top_fts: int default None, Tells feature importance function to plot top X features. If none all feature
+    importances will be plotted
+    :param tuner: str default "random_cv", String argument defining the parameter tuning function to be used.
+    :param n_iterations: int default 15, used to determine the number of parameter settings that are selected for
+    tuning. This argument is ignored when "grid_cv" is used
+    :param get_ft_imp: boolean default True, tells model_eval whether or not to get and plot the feature
+    importance of the models
+    :param n_jobs: int default 1, Expects integer value of number of parallel process to run during model fitting.
+    :param random_seed: int default None, Expects integer value for the random seed to be passed into relative
+    functions and classes. If not passed will use np.random to set this value
+    :param binary: boolean default True, Flag to tell the functions whether or not is a binary classification problem.
+    If it is a regression problem this argument is ignored.
+    :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
+    keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
+    the logged out components.
+    :param log_name: str default None, prefix name of logged out data. Ignored if log is None
+    :param log_path: str default None, path to save log data to. Ignored if no log is None
+    :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
+    :return:
+    """
 
     if random_seed is None:
         random_seed = np.random.randint(1000, size=1)[0]
         print("Random Seed Value: " + str(random_seed))
+
+    # init the model and define the problem type (linear and svr don't take random_state args)
+    if model not in ["linear", "svr"] and not params:
+        params = {"random_state": random_seed}
+    mod_scv = mi.init_model(model=model, params=params)
+
+    problem_type = mi.define_problem_type(mod_scv)
 
     if select_features:
         print("Selecting features")
@@ -53,7 +106,7 @@ def tune_test_model(
             X=X,
             y=y,
             methods=select_features["methods"],
-            problem_type="clf",
+            problem_type=problem_type,
             model_pipe=select_features["model_pipe"],
             imp_thresh=select_features["imp_thresh"],
             corr_thresh=select_features["corr_thresh"],
@@ -71,26 +124,18 @@ def tune_test_model(
     else:
         features = list(X.columns)
 
-    # init the model and define the problem type (linear and svr don't take random_state args)
-    if model not in ["linear", "svr"] and not params:
-        params = {"random_state": random_seed}
-    mod_scv = mi.init_model(model=model, params=params)
+    if tune_metric is None and problem_type == "clf":
+        tune_metric = "f1"
+    else:
+        tune_metric = "neg_mean_squared_error"
 
-    if tune_metric is None or len(eval_metrics) == 0:
-        problem_type = mi.define_problem_type(mod_scv)
-
-        if tune_metric is None and problem_type == "clf":
-            tune_metric = "f1"
-        else:
-            tune_metric = "neg_mean_squared_error"
-
-        if len(eval_metrics) == 0 and problem_type == "clf":
-            eval_metrics = ["f1"]
-        else:
-            eval_metrics = ["mse"]
+    if len(eval_metrics) == 0 and problem_type == "clf":
+        eval_metrics = ["f1"]
+    elif len(eval_metrics) == 0 and problem_type == "regress":
+        eval_metrics = ["mse"]
 
     if pipe and scale:
-        print("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
+        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
         return
 
     if pipe:
@@ -145,13 +190,30 @@ def tune_test_model(
         return
 
     scv.fit(X, y)
-    print("Best score for grid search: " + str(scv.best_score_))
+
+    test_params = params.copy()
 
     mod = scv.best_estimator_
     params = mod.get_params()
     print("Parameters of the best model: \n")
-    print(mod.get_params())
-    print("\n")
+    if type(mod).__name__ == "Pipeline":
+        print(type(mod.named_steps["clf"]).__name__ + " Parameters")
+        print(str(mod.named_steps["clf"].get_params()) + "\n")
+
+    elif "Voting" in type(mod).__name__:
+        print(
+            type(mod).__name__ + " weights: " + str(mod.get_params()["weights"]) + "\n"
+        )
+        for c in mod.estimators_:
+            if type(c).__name__ == "Pipeline":
+                print(type(c.named_steps["clf"]).__name__ + " Parameters")
+                print(str(c.named_steps["clf"].get_params()) + "\n")
+            else:
+                print(type(c).__name__ + " Parameters")
+                print(str(c.get_params()) + "\n")
+    else:
+        print(type(mod).__name__ + " Parameters")
+        print(str(mod.get_params()) + "\n")
 
     print("Performing model eval on best estimator")
 
@@ -177,23 +239,28 @@ def tune_test_model(
 
     if log:
 
-        log_data["test_params"] = params
+        log_data["test_params"] = test_params
         log_data["tune_metric"] = tune_metric
         if log_note:
             log_data["note"] = log_note
 
         if isinstance(log, list):
-            log_path, log_name = lu.construct_save_dir(
-                fl_path=None, fl_name=None, model_name=None
+            log_path, log_name, timestr = lu.construct_save_path(
+                fl_path=log_path,
+                fl_name=log_name,
+                model_name=log_data["model"],
+                save_dir=True,
             )
         else:
             log_path, log_name, timestr = lu.construct_save_path(
-                fl_path=None, fl_name=None, model_name=None
+                fl_path=log_path,
+                fl_name=log_name,
+                model_name=log_data["model"],
+                save_dir=False,
             )
 
         if isinstance(log, list):
             for x in log:
-                print("Saving out the: " + x)
                 if x == "log":
                     lu.log_results(
                         fl_name=log_name,
@@ -211,16 +278,17 @@ def tune_test_model(
                         data=tmp_data, fl_path=log_path, fl_name=log_name, data_type=x
                     )
                 elif x == "mod":
-                    lu.pickle_data(data=mod, fl_path=log_path, fl_name=log_name, data_type=x)
+                    lu.pickle_data(
+                        data=mod, fl_path=log_path, fl_name=log_name, data_type=x
+                    )
                 else:
-                    print("LOG TYPE NOT SUPPORTED: " + x)
-
-        if log == "log":
+                    logger.warning("LOG TYPE NOT SUPPORTED: " + x)
+        elif log == "log":
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=True
             )
         else:
-            print("LOG TYPE NOT SUPPORTED: " + log)
+            logger.warning("LOG TYPE NOT SUPPORTED: " + str(log))
 
     return [mod, params, features]
 
@@ -249,7 +317,8 @@ def model_eval(
     Model Eval function. Used to perform cross validation on model and is automatically called post tune_test_model
     :param X: pandas dataframe containing features for model training
     :param y: series or np array containing prediction values
-    :param model: Model object containing fit, predict, predict_proba attributes, sklearn pipeline object or string indicator of model to eval
+    :param model: Model object containing fit, predict, predict_proba attributes, sklearn pipeline object or
+    string indicator of model to eval
     :param params: dictionary containing parameters of model to fit on
     :param metrics: list of metrics to eval model on default is ['f1]
     :param bins: list of bin ranges to output the score to percent actual distribution
@@ -264,7 +333,7 @@ def model_eval(
     :param log_name: string name of the logger doc
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
-    :param tune_test:
+    :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
     :return:
     """
 
@@ -274,6 +343,7 @@ def model_eval(
 
     mod = mi.init_model(model=model, params=params)
     problem_type = mi.define_problem_type(mod=mod)
+
     if len(metrics) == 0:
         if problem_type == "clf":
             metrics = ["f1"]
@@ -330,16 +400,10 @@ def model_eval(
             avg=avg,
         )
 
-        print(
-            "Finished cv run: "
-            + str(cnt)
-            + " time: "
-            + str(time.time() - cv_st)
-            + " \n \n"
-        )
+        print("Finished cv run: " + str(cnt) + " time: " + str(time.time() - cv_st))
         cnt += 1
 
-    print("CV Run Scores")
+    print("\nCV Run Scores")
     for metric in metrics:
         print(metric + " scores: " + str(metric_dictionary[metric + "_scores"]))
         print(metric + " mean: " + str(metric_dictionary[metric + "_scores"].mean()))
@@ -385,9 +449,36 @@ def model_eval(
         log_data = {
             "features": list(X.columns),
             "random_seed": random_seed,
-            "params": mod.get_params(),
             "metrics": metric_dictionary,
+            "params": list(),
         }
+
+        if type(mod).__name__ == "Pipeline":
+            log_data["params"].append(
+                [
+                    type(mod.named_steps["clf"]).__name__,
+                    str(mod.named_steps["clf"].get_params()),
+                ]
+            )
+
+        elif "Voting" in type(mod).__name__:
+            log_data["params"].append(
+                str([type(mod).__name__, str(mod.get_params()["weights"])])
+            )
+            for c in mod.estimators_:
+                if type(c).__name__ == "Pipeline":
+                    log_data["params"].append(
+                        [
+                            type(c.named_steps["clf"]).__name__,
+                            str(c.named_steps["clf"].get_params()),
+                        ]
+                    )
+                else:
+                    log_data["params"].append(
+                        [type(c).__name__, str(c.get_params()),]
+                    )
+        else:
+            log_data["params"].append([type(mod).__name__, str(mod.get_params())])
 
         if problem_type == "clf":
             log_data["cf"] = cf
@@ -411,18 +502,15 @@ def model_eval(
         if get_ft_imp:
             log_data["ft_imp_df"] = ft_imp_df
 
-
         # if called from tune test then return the log data for final appending before logout
         # else log out the data and then return the final dictionary
         # TODO add in funcitonality to log out the model and the data in a dir just like the tune and tester
         if tune_test:
             return log_data
-        
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-
-            return log_data
+            return
 
     return

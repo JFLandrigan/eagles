@@ -7,9 +7,12 @@ from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import silhouette_score
 from kneed import KneeLocator
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-def find_max_sil(res_dict):
+def _find_max_sil(res_dict):
     max_ind = res_dict["scores"].argmax()
     num_clusters = res_dict["n_clusters"][max_ind]
     max_sil_score = res_dict["scores"][max_ind]
@@ -20,7 +23,7 @@ def find_max_sil(res_dict):
 def _init_method(model=None, params={}):
 
     if model is None:
-        print("No model passed in")
+        logger.warning("No model passed in")
         return
 
     if model == "kmeans":
@@ -39,7 +42,7 @@ def find_optimal_clusters(
     data=None,
     ft_cols=[],
     cluster_method="kmeans",
-    metric="min_sil",
+    metric="max_sil",
     min_num_clusters=2,
     max_num_clusters=10,
     params={},
@@ -54,9 +57,37 @@ def find_optimal_clusters(
     log_path=None,
     log_note=None,
 ):
+    """
+    Takes in data and model and fits specified unsupervised model to the data. Then uses the specified metric to find
+    the optimal number of clusters. The optimal number of clusters is passed to eval_clusters to evaluate the
+    clusters for differences
+    :param data: default None, expects pandas dataframe with names columns
+    :param ft_cols: default empty list: expects list containing string names of the columns to use for clustering.
+    If default then uses all cols
+    :param cluster_method: default "kmeans", expects string name of the model to be applied (i.e. kmeans,
+    agglomerativeclustering, dbscan
+    :param metric: default "max_sil", expects string for metric to determine the optimal number of clusters
+    :param min_num_clusters: default 2, int specifying the lower bound of the number clusters
+    :param max_num_clusters: default 10, int specifyuing the upper bound of the number clusters
+    :param params: default empty dict, paramter dictionary for the model being tested
+    :param scale: default None, expects either "minmax", "standard" or sklearn scaler object
+    :param plot_dims: default empty list, expects list of dimensions to plot the result clusters across
+    :param summary_stats: default empty list, expects list of grouping statistics to apply to data \
+    during cluster comparisons
+    :param run_stat_comps: default True, boolean indicating whether or not to run cluster comparisons
+    :param plot_scale: default None, expects either "minmax" or "standard" to indicate scaling of features for plots
+    :param random_seed: default None, int specifying the random seed value for the analysis
+    :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
+    keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
+    the logged out components.
+    :param log_name: str default None, prefix name of logged out data. Ignored if log is None
+    :param log_path: str default None, path to save log data to. Ignored if no log is None
+    :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
+    :return: returns pandas df with attached cluster labels
+    """
 
     if min_num_clusters == max_num_clusters:
-        print("WARNING MIN AND MAX NUM CLUSTERS SHOULD NOT BE EQUAL")
+        logger.warning("WARNING MIN AND MAX NUM CLUSTERS SHOULD NOT BE EQUAL")
         return
 
     if random_seed is None:
@@ -93,30 +124,34 @@ def find_optimal_clusters(
             res_dict["n_clusters"] = np.append(res_dict["n_clusters"], i)
             model = _init_method(model=cluster_method, params=params)
 
-            model.fit_predict(data[ft_cols])
+            pred_labels = model.fit_predict(data[ft_cols])
 
-            if metric in ["max_sil", "knee_sil"]:
+            if metric in ["max_sil"]:
                 res_dict["scores"] = np.append(
-                    res_dict["scores"], silhouette_score(data, model.labels_)
+                    res_dict["scores"], silhouette_score(data, pred_labels)
                 )
             elif metric == "knee_wss":
                 res_dict["scores"] = np.append(res_dict["scores"], model.inertia_)
             else:
-                print("WARNING METRIC NOT SUPPORTED")
+                logger.warning("WARNING METRIC NOT SUPPORTED")
                 return
+
+            print("Finished fitting model with " + str(i) + " clusters", end="\r")
+
+        print("", end="\n")
 
     elif cluster_method in ["dbscan"]:
         model = _init_method(model=cluster_method, params=params)
         model.fit_predict(data[ft_cols])
     else:
-        print("WARNING the clustering method is not supported")
+        logger.warning("Non supported model passed in")
         return
 
     # Once looped through and found the scores across the range of clusters then get final set based on the best score
     if cluster_method in ["kmeans", "agglomerativeclustering"]:
 
         if metric == "max_sil":
-            opt_n_clusters, max_sil_score = find_max_sil(res_dict=res_dict)
+            opt_n_clusters, max_sil_score = _find_max_sil(res_dict=res_dict)
             opt_n_clusters = int(opt_n_clusters)
             print("Best silhoutte score: " + str(max_sil_score))
         elif metric == "knee_wss":
@@ -125,14 +160,6 @@ def find_optimal_clusters(
                 y=res_dict["scores"],
                 curve="convex",
                 direction="decreasing",
-            )
-            opt_n_clusters = int(kn.knee)
-        elif metric == "knee_sil":
-            kn = KneeLocator(
-                x=res_dict["n_clusters"],
-                y=res_dict["scores"],
-                curve="concave",
-                direction="increasing",
             )
             opt_n_clusters = int(kn.knee)
 
@@ -164,11 +191,11 @@ def find_optimal_clusters(
 
 def eval_clusters(
     data=None,
+    ft_cols=[],
     n_clusters=2,
-    method=None,
+    method="kmeans",
     params={},
     scale=None,
-    ft_cols=[],
     plot_dims=[],
     summary_stats=[],
     run_stat_comps=True,
@@ -178,6 +205,28 @@ def eval_clusters(
     log_path=None,
     log_note=None,
 ):
+    """
+    Function to find and compare clusters across specified dimensions
+    :param data:  default None, expects pandas dataframe with names columns
+    :param ft_cols: default empty list: expects list containing string names of the columns to use for clustering.
+    :param n_clusters: default 2, int specifying the number of desired clusters
+    :param method: default "kmeans", expects string name of the model to be applied (i.e. kmeans,
+    agglomerativeclustering, dbscan
+    :param params: default empty dict, paramter dictionary for the model being used
+    :param scale: default None, expects either "minmax", "standard" or sklearn scaler object
+    :param plot_dims: default empty list, expects list of dimensions to plot the result clusters across
+    :param summary_stats: default empty list, expects list of grouping statistics to apply to data \
+    during cluster comparisons
+    :param run_stat_comps: default True, boolean indicating whether or not to run cluster comparisons
+    :param plot_scale: default None, expects either "minmax" or "standard" to indicate scaling of features for plots
+    :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
+    keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
+    the logged out components.
+    :param log_name: str default None, prefix name of logged out data. Ignored if log is None
+    :param log_path: str default None, path to save log data to. Ignored if no log is None
+    :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
+    :return: returns pandas df with attached cluster labels
+    """
 
     if len(ft_cols) == 0:
         ft_cols = [col for col in data.columns]
@@ -197,12 +246,16 @@ def eval_clusters(
         data = pd.DataFrame(data)
         data.columns = ft_cols
 
-    params["n_clusters"] = n_clusters
+    if method in ["kmeans", "agglomerativeclustering"] and "n_cluster" not in params.keys():
+        params["n_clusters"] = n_clusters
+
     model = _init_method(model=method, params=params)
-    model.fit_predict(data[ft_cols])
+    pred_labels = model.fit_predict(data[ft_cols])
     data["Cluster"] = model.labels_
 
-    print("Silhouette Score: " + str(round(silhouette_score(data, model.labels_), 2)))
+    sil_score = silhouette_score(data, pred_labels)
+
+    print("Silhouette Score: " + str(round(sil_score, 2)))
     if type(model).__name__ == "Pipeline":
         if type(model.named_steps["model"]).__name__ == "KMeans":
             print("WSS Total: " + str(round(model.named_steps["model"].inertia_, 2)) + "\n")
@@ -218,8 +271,9 @@ def eval_clusters(
     base_cluster_stats = ceu.create_summary_table(
         data=data, plot_dims=plot_dims, summary_stats=summary_stats
     )
+    base_cluster_stats = round(base_cluster_stats,2)
     print("Base Cluster Stats \n")
-    print(round(base_cluster_stats.T, 2))
+    print(base_cluster_stats.T)
     print("\n\n")
 
     if run_stat_comps:
@@ -230,12 +284,12 @@ def eval_clusters(
             print("No significant differences found between clusters")
         else:
             print("Significance Testing Results \n")
-            print(str(sig_test_results) + "\n\n")
+            print(str(round(sig_test_results, 2)) + "\n\n")
             if post_hoc_comps.shape[0] == 0:
                 print("No pairwise significant difference")
             else:
                 print("Pairwise Differences \n")
-                print(str(post_hoc_comps) + "\n\n")
+                print(str(round(post_hoc_comps, 2)) + "\n\n")
 
     pu.plot_mean_cluster_scores(data=data, plot_scale=plot_scale)
     pu.plot_ft_relationships(data=data, plot_dims=plot_dims)
@@ -243,11 +297,11 @@ def eval_clusters(
     if log:
         log_data = {
             "n_clusters":n_clusters
-            ,"features":ft_cols
-            ,"Silhouette Score":round(silhouette_score(data, model.labels_), 2)
-            ,"data":data
-            ,"params": model.get_params()
-            ,"base_cluster_stats":round(base_cluster_stats,2)
+            , "features":ft_cols
+            , "Silhouette Score":round(sil_score, 2)
+            , "data":data
+            , "params": model.get_params()
+            , "base_cluster_stats":round(base_cluster_stats,2)
         }
 
         if type(model).__name__ == "Pipeline":
@@ -256,6 +310,8 @@ def eval_clusters(
             for k in model.named_steps.keys():
                 pipe_steps = pipe_steps + type(model.named_steps[k]).__name__ + " "
             log_data["pipe_steps"] = pipe_steps
+        else:
+            log_data["method"] = type(model).__name__
 
         if type(model).__name__ == "Pipeline":
             if type(model.named_steps["model"]).__name__ == "KMeans":
