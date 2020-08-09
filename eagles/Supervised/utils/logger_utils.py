@@ -74,7 +74,7 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
 
     f.write("Params of model: " + "\n")
     for pr in log_data["params"]:
-        f.write(str(pr) + "\n")
+        f.write(str(pr) + "\n\n")
     f.write("\n\n")
 
     tmp_metric_dict = log_data["metrics"]
@@ -99,8 +99,10 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
     f.write(" \n \n")
 
     if "cf" in log_data.keys():
+        f.write("Raw Confusion Matrix \n")
         f.write(str(log_data["cf"]) + " \n \n")
     if "cr" in log_data.keys():
+        f.write("Classification Report \n")
         f.write(log_data["cr"] + " \n \n")
 
     if "bin_table" in log_data.keys():

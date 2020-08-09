@@ -58,7 +58,7 @@ Currently the functions primarily support the following the sklearn algorithms h
 
 ### Supervised
 
-When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is used for the parameter search and the *eval_metric* argument is used for the final model evaluation (eval metrics should be passed in as a list). For ```supervised_tuner.model_eval()``` the metrics argument is used to tell the function what metrics to use (these should be passed in a list). If no metrics are passed in (for tuning and/or eval) classification problems will default to 'f1' and regression problems will default to 'mse'. 
+When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is used for the parameter search and the *eval_metric* argument is used for the final model evaluation (eval metrics should be passed in as a list). For ```supervised_tuner.model_eval()``` the metrics argument is used to tell the function what metrics to use (these should be passed in a list). If no metrics are passed in (for tuning and/or eval) classification problems will default to 'f1' and regression problems will default to 'mse'. Note that for multi-class classification problems the metrics default to "macro" averages. 
 
 | Classification                                               | Regression                                                   |
 | :----------------------------------------------------------- | :----------------------------------------------------------- |
