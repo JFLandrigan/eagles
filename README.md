@@ -30,6 +30,8 @@ from eagles.Unsupervised import unsupervised_tuner as ut
 
 Note that the functions primarily support sklearn model objects however if a model follows the standard fit, predict and predict_proba methods it can be passed in directly as well.
 
+### Supervised
+
 | Classification                         | Regression                                |
 | -------------------------------------- | ----------------------------------------- |
 | "rf_clf" : RandomForestClassifier      | "rf_regress" : RandomForestRegressor      |
@@ -42,9 +44,19 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "ada_clf" : AdaBoostClassifier         | "knn_regress" : KNeighborsRegressor       |
 |                                        | "ada_regress" : AdaBoostRegressor         |
 
+### Unsupervised
+
+Currently the functions primarily support the following the sklearn algorithms however other model objects can be passed in assuming they support the ```fit_predict()``` methodology like other sklearn clustering algorithms. 
+
+- "kmeans"
+- "agglomerativeclustering"
+- "dbscan"
+
 
 
 ## Metric Options
+
+### Supervised
 
 When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is used for the parameter search and the eval_metric argument is used for the final model evaluation (eval metrics should be passed in as a list). For ```supervised_tuner.model_eval()``` the metrics argument is used to tell the function what metrics to use (these should be passed in a list). If no metrics are passed in (for tuning and/or eval) classification problems will default to 'f1' and regression problems will default to 'mse'. 
 
@@ -57,9 +69,18 @@ When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is 
 | 'roc_auc' - Area Under the Receiver Operating Characteristic Curve | 'r2'                                                         |
 | 'precision_recall_auc' - Area Under the Precision Recall Curve |                                                              |
 
+### Unsupervised
+
+When ```unsupervised_tuner.find_optimal_clusters()``` with K-Means or Agglomerative Clustering is used the following metrics can be used to find the "optimal" or "suggested "number of clusters however thorough analysis should be performed.
+
+- "max_sil" : After generating models based on the range of cluster numbers desired the algorithm will pick the optimal number of clusters as the number of  clusters which resulted in the highest max silhouette score. 
+- "knee_wss"  :  After generating models based on the range of cluster numbers desired the ```KneeLocator()``` method used (provided by the Knee package) to find the "elbow" or point at which increasing the number of clusters does not significantly decrease the amount of within cluster variability. 
+
+Note the DBSCAN algorithm uses internal methods to find the optimal number of clusters. 
 
 
-## tune_test_model() parameter search options
+
+## supervised_tuner.tune_test_model() parameter search options
 
 - 'random_cv' : sklearn implementation of random parameter search. Can pass in n_jobs to parallelize fits and n_iterations to determine total number of fits. 
 - 'bayes_cv' :  scikit-optimize implementation of bayes parameter search. Can pass in n_jobs to parallelize fits and n_iterations to determine total number of fits. 
