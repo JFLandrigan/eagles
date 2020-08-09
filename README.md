@@ -16,7 +16,7 @@ For examples of how to used the functions contained within the package see the f
 
 
 
-## Install and How to use it?
+## Install
 **This package is still under heavy development and testing. ** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles/tree/master ```  .  Once installed it can be imported like any other python package. For example:
 
 ```
@@ -58,7 +58,7 @@ Currently the functions primarily support the following the sklearn algorithms h
 
 ### Supervised
 
-When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is used for the parameter search and the eval_metric argument is used for the final model evaluation (eval metrics should be passed in as a list). For ```supervised_tuner.model_eval()``` the metrics argument is used to tell the function what metrics to use (these should be passed in a list). If no metrics are passed in (for tuning and/or eval) classification problems will default to 'f1' and regression problems will default to 'mse'. 
+When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is used for the parameter search and the *eval_metric* argument is used for the final model evaluation (eval metrics should be passed in as a list). For ```supervised_tuner.model_eval()``` the metrics argument is used to tell the function what metrics to use (these should be passed in a list). If no metrics are passed in (for tuning and/or eval) classification problems will default to 'f1' and regression problems will default to 'mse'. 
 
 | Classification                                               | Regression                                                   |
 | :----------------------------------------------------------- | :----------------------------------------------------------- |
@@ -74,7 +74,7 @@ When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is 
 When ```unsupervised_tuner.find_optimal_clusters()``` with K-Means or Agglomerative Clustering is used the following metrics can be used to find the "optimal" or "suggested "number of clusters however thorough analysis should be performed.
 
 - "max_sil" : After generating models based on the range of cluster numbers desired the algorithm will pick the optimal number of clusters as the number of  clusters which resulted in the highest max silhouette score. 
-- "knee_wss"  :  After generating models based on the range of cluster numbers desired the ```KneeLocator()``` method used (provided by the Knee package) to find the "elbow" or point at which increasing the number of clusters does not significantly decrease the amount of within cluster variability. 
+- "knee_wss"  :  After generating models based on the range of cluster numbers desired the ```KneeLocator()``` method used (provided by the kneed package) to find the "elbow" or point at which increasing the number of clusters does not significantly decrease the amount of within cluster variability. 
 
 Note the DBSCAN algorithm uses internal methods to find the optimal number of clusters. 
 
@@ -114,7 +114,7 @@ Note the DBSCAN algorithm uses internal methods to find the optimal number of cl
 
 ## Passing in Pipelines
 
-Sklearn pipeline objects can be passed directly into supervised_tuner.model_eval() and supervised_tuner.tune_test_model() via the model argument (i.e. when a model is embedded within a pipeline) or the pipe argument. When the pipeline is passed into the pipe argument the model will be appended and/or embedded within the passed in pipeline. Note the following conventions for pipeline prefixes should be followed:
+Sklearn pipeline objects can be passed directly into ```supervised_tuner.model_eval()``` and ```supervised_tuner.tune_test_model()``` via the model argument (i.e. when a model is embedded within a pipeline) or the pipe argument. When the pipeline is passed into the pipe argument the model will be appended and/or embedded within the passed in pipeline. Note the following conventions for pipeline prefixes should be followed:
 
 - 'impute' : for imputation steps
 - 'scale': for scaling steps
