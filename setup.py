@@ -8,6 +8,7 @@ setup(
     author="Jon-Frederick Landrigan",
     author_email="jon.landrigan@gmail.com",
     packages=find_packages(),
+    include_package_data=True,
     install_requires=[
         "gensim",
         "imbalanced-learn",
