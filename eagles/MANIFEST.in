@@ -1,3 +1,0 @@
-include datasets/iris.csv
-include README.md
-include requirements.txt
