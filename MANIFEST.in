@@ -1,3 +1,4 @@
 include eagles/data_sets/iris.csv
 include README.md
 include requirements.txt
+include LICENCES/*
