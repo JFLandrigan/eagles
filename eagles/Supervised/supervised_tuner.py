@@ -367,6 +367,9 @@ def model_eval(
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
+        # TODO move the pipe and scale code to be outside the cv for loop like in the grid search code so can have
+        # TODO-- final model type with post loop metrics etc should go above the init model section
+
         if pipe and tune_test == False:
             tmp_mod = pipe
             tmp_mod.steps.append(["clf", mod])
@@ -444,6 +447,14 @@ def model_eval(
 
     if get_ft_imp:
         ft_imp_df = tu.feature_importances(mod=mod, X=X, num_top_fts=num_top_fts)
+
+    # TODO add in the code for the refit on full data and the append of preds onto final test set
+    # TODO make sure mod isn't being used anywhere else
+    fin_test_df = X_test.copy(deep=True)
+    fin_test_df["preds"] = preds
+    fin_test_df["pred_probs"] = pred_probs
+    # refit the model on the entire dataset
+    mod.fit(X, y)
 
     if log:
         log_data = {
