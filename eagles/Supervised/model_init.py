@@ -101,6 +101,6 @@ def build_pipes(mod=None, params=None, scale=None, pipe=None):
 
     if params:
         params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-        return mod, params
+        return [mod, params]
     else:
         return mod

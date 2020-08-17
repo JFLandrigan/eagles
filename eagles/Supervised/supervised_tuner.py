@@ -104,9 +104,9 @@ def tune_test_model(
         return
 
     if pipe:
-        mod_scv = mi.build_pipes(mod=mod_scv, params=params, pipe=pipe)
+        mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, pipe=pipe)
     elif scale:
-        mod_scv = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
+        mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
 
     if select_features:
         print("Selecting features")
