@@ -99,6 +99,15 @@ def tune_test_model(
 
     problem_type = mi.define_problem_type(mod_scv)
 
+    if pipe and scale:
+        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
+        return
+
+    if pipe:
+        mod_scv = mi.build_pipes(mod=mod_scv, params=params, pipe=pipe)
+    elif scale:
+        mod_scv = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
+
     if select_features:
         print("Selecting features")
 
@@ -124,34 +133,19 @@ def tune_test_model(
     else:
         features = list(X.columns)
 
+    # ensure that a tune metric is defined
     if tune_metric is None and problem_type == "clf":
         tune_metric = "f1"
     else:
         tune_metric = "neg_mean_squared_error"
 
+    # ensure that eval metrics have been defined
     if len(eval_metrics) == 0 and problem_type == "clf":
         eval_metrics = ["f1"]
     elif len(eval_metrics) == 0 and problem_type == "regress":
         eval_metrics = ["mse"]
 
-    if pipe and scale:
-        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
-        return
-
-    if pipe:
-        tmp_mod_scv = pipe
-        tmp_mod_scv.steps.append(["clf", mod_scv])
-        mod_scv = tmp_mod_scv
-        params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-
-    elif scale:
-        if scale == "standard":
-            mod_scv = Pipeline([("scale", StandardScaler()), ("clf", mod_scv)])
-            params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-        elif scale == "minmax":
-            mod_scv = Pipeline([("scale", MinMaxScaler()), ("clf", mod_scv)])
-            params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-
+    # set up the parameter search object
     if tuner == "random_cv":
         scv = RandomizedSearchCV(
             mod_scv,
@@ -344,6 +338,11 @@ def model_eval(
     mod = mi.init_model(model=model, params=params)
     problem_type = mi.define_problem_type(mod=mod)
 
+    if pipe:
+        mod = mi.build_pipes(mod=mod, pipe=pipe)
+    elif scale:
+        mod = mi.build_pipes(mod=mod, scale=scale)
+
     if len(metrics) == 0:
         if problem_type == "clf":
             metrics = ["f1"]
@@ -366,25 +365,6 @@ def model_eval(
 
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-
-        # TODO move the pipe and scale code to be outside the cv for loop like in the grid search code so can have
-        # TODO-- final model type with post loop metrics etc should go above the init model section
-
-        if pipe and tune_test == False:
-            tmp_mod = pipe
-            tmp_mod.steps.append(["clf", mod])
-            mod = tmp_mod
-            params = {"clf__" + k: v for k, v in params.items()}
-
-        elif scale and tune_test == False:
-            if scale == "standard":
-                scaler = StandardScaler()
-            elif scale == "minmax":
-                scaler = MinMaxScaler()
-
-            scaler.fit(X_train)
-            X_train = scaler.transform(X_train)
-            X_test = scaler.transform(X_test)
 
         mod.fit(X_train, y_train)
         preds = mod.predict(X_test)
