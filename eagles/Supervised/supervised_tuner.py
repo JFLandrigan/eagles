@@ -8,8 +8,6 @@ import time
 import pandas as pd
 import numpy as np
 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
 
@@ -328,7 +326,7 @@ def model_eval(
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
     :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
-    :return:
+    :return: model fitted on last cross validation set and last set of cv data for predictions
     """
 
     if random_seed is None:
@@ -428,13 +426,11 @@ def model_eval(
     if get_ft_imp:
         ft_imp_df = tu.feature_importances(mod=mod, X=X, num_top_fts=num_top_fts)
 
-    # TODO add in the code for the refit on full data and the append of preds onto final test set
-    # TODO make sure mod isn't being used anywhere else
+    # create a copy of the final testing data and append the predictions, pred probs and true values
     fin_test_df = X_test.copy(deep=True)
+    fin_test_df["true_labels"] = y_test
     fin_test_df["preds"] = preds
     fin_test_df["pred_probs"] = pred_probs
-    # refit the model on the entire dataset
-    mod.fit(X, y)
 
     if log:
         log_data = {
@@ -495,13 +491,12 @@ def model_eval(
 
         # if called from tune test then return the log data for final appending before logout
         # else log out the data and then return the final dictionary
-        # TODO add in funcitonality to log out the model and the data in a dir just like the tune and tester
         if tune_test:
             return log_data
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-            return
+            return [mod, fin_test_df]
 
-    return
+    return [mod, fin_test_df]
