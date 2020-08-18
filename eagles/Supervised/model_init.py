@@ -88,10 +88,10 @@ def init_model(model=None, params={}):
 
 
 def build_pipes(mod=None, params=None, scale=None, pipe=None):
+
     if pipe:
-        tmp_mod = pipe
-        tmp_mod.steps.append(["clf", mod])
-        mod = tmp_mod
+        pipe.steps.append(["clf", mod])
+        mod = pipe
 
     elif scale:
         if scale == "standard":
