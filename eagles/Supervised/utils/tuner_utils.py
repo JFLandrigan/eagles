@@ -246,9 +246,8 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
     if type(mod).__name__ == "Pipeline":
 
         if "feature_selection" in mod.named_steps:
-            inds = list([mod.named_steps["feature_selection"].get_support()])
-            tmp_fts = np.array(X.columns)[inds]
-            tmp_fts = list(tmp_fts)
+            inds = [mod.named_steps["feature_selection"].get_support()][0]
+            tmp_fts = X.columns[inds]
         else:
             tmp_fts = list(X.columns)
 
@@ -273,9 +272,8 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
             if type(c).__name__ == "Pipeline":
 
                 if "feature_selection" in c.named_steps:
-                    inds = list([c.named_steps["feature_selection"].get_support()])
-                    tmp_fts = np.array(X.columns)[inds]
-                    tmp_fts = list(tmp_fts)
+                    inds = [mod.named_steps["feature_selection"].get_support()][0]
+                    tmp_fts = X.columns[inds]
                 else:
                     tmp_fts = list(X.columns)
 

@@ -13,6 +13,9 @@ from sklearn.svm import SVC, SVR
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.pipeline import Pipeline
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -82,3 +85,22 @@ def init_model(model=None, params={}):
         mod = model
 
     return mod
+
+
+def build_pipes(mod=None, params=None, scale=None, pipe=None):
+
+    if pipe:
+        pipe.steps.append(["clf", mod])
+        mod = pipe
+
+    elif scale:
+        if scale == "standard":
+            mod = Pipeline([("scale", StandardScaler()), ("clf", mod)])
+        elif scale == "minmax":
+            mod = Pipeline([("scale", MinMaxScaler()), ("clf", mod)])
+
+    if params:
+        params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
+        return [mod, params]
+    else:
+        return mod

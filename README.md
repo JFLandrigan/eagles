@@ -117,6 +117,7 @@ Note the DBSCAN algorithm uses internal methods to find the optimal number of cl
 Sklearn pipeline objects can be passed directly into ```supervised_tuner.model_eval()``` and ```supervised_tuner.tune_test_model()``` via the model argument (i.e. when a model is embedded within a pipeline) or the pipe argument. When the pipeline is passed into the pipe argument the model will be appended and/or embedded within the passed in pipeline. Note the following conventions for pipeline prefixes should be followed:
 
 - 'impute' : for imputation steps
+- 'feature_selection' : for feature selection steps (using sklearn feature selection select from model)
 - 'scale': for scaling steps
 - 'clf' : for the classifiers
 

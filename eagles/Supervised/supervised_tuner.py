@@ -8,8 +8,6 @@ import time
 import pandas as pd
 import numpy as np
 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
 
@@ -99,6 +97,15 @@ def tune_test_model(
 
     problem_type = mi.define_problem_type(mod_scv)
 
+    if pipe and scale:
+        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
+        return
+
+    if pipe:
+        mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, pipe=pipe)
+    elif scale:
+        mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
+
     if select_features:
         print("Selecting features")
 
@@ -124,34 +131,19 @@ def tune_test_model(
     else:
         features = list(X.columns)
 
+    # ensure that a tune metric is defined
     if tune_metric is None and problem_type == "clf":
         tune_metric = "f1"
     else:
         tune_metric = "neg_mean_squared_error"
 
+    # ensure that eval metrics have been defined
     if len(eval_metrics) == 0 and problem_type == "clf":
         eval_metrics = ["f1"]
     elif len(eval_metrics) == 0 and problem_type == "regress":
         eval_metrics = ["mse"]
 
-    if pipe and scale:
-        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
-        return
-
-    if pipe:
-        tmp_mod_scv = pipe
-        tmp_mod_scv.steps.append(["clf", mod_scv])
-        mod_scv = tmp_mod_scv
-        params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-
-    elif scale:
-        if scale == "standard":
-            mod_scv = Pipeline([("scale", StandardScaler()), ("clf", mod_scv)])
-            params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-        elif scale == "minmax":
-            mod_scv = Pipeline([("scale", MinMaxScaler()), ("clf", mod_scv)])
-            params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
-
+    # set up the parameter search object
     if tuner == "random_cv":
         scv = RandomizedSearchCV(
             mod_scv,
@@ -224,8 +216,8 @@ def tune_test_model(
         params={},
         metrics=eval_metrics,
         bins=bins,
-        pipe=pipe,
-        scale=scale,
+        pipe=None,
+        scale=None,
         num_top_fts=num_top_fts,
         num_cv=num_cv,
         get_ft_imp=get_ft_imp,
@@ -334,7 +326,7 @@ def model_eval(
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
     :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
-    :return:
+    :return: model fitted on last cross validation set and last set of cv data for predictions
     """
 
     if random_seed is None:
@@ -343,6 +335,11 @@ def model_eval(
 
     mod = mi.init_model(model=model, params=params)
     problem_type = mi.define_problem_type(mod=mod)
+
+    if pipe:
+        mod = mi.build_pipes(mod=mod, pipe=pipe)
+    elif scale:
+        mod = mi.build_pipes(mod=mod, scale=scale)
 
     if len(metrics) == 0:
         if problem_type == "clf":
@@ -366,22 +363,6 @@ def model_eval(
 
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-
-        if pipe and tune_test == False:
-            tmp_mod = pipe
-            tmp_mod.steps.append(["clf", mod])
-            mod = tmp_mod
-            params = {"clf__" + k: v for k, v in params.items()}
-
-        elif scale and tune_test == False:
-            if scale == "standard":
-                scaler = StandardScaler()
-            elif scale == "minmax":
-                scaler = MinMaxScaler()
-
-            scaler.fit(X_train)
-            X_train = scaler.transform(X_train)
-            X_test = scaler.transform(X_test)
 
         mod.fit(X_train, y_train)
         preds = mod.predict(X_test)
@@ -445,6 +426,12 @@ def model_eval(
     if get_ft_imp:
         ft_imp_df = tu.feature_importances(mod=mod, X=X, num_top_fts=num_top_fts)
 
+    # create a copy of the final testing data and append the predictions, pred probs and true values
+    fin_test_df = X_test.copy(deep=True)
+    fin_test_df["true_labels"] = y_test
+    fin_test_df["preds"] = preds
+    fin_test_df["pred_probs"] = pred_probs
+
     if log:
         log_data = {
             "features": list(X.columns),
@@ -504,13 +491,12 @@ def model_eval(
 
         # if called from tune test then return the log data for final appending before logout
         # else log out the data and then return the final dictionary
-        # TODO add in funcitonality to log out the model and the data in a dir just like the tune and tester
         if tune_test:
             return log_data
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-            return
+            return [mod, fin_test_df]
 
-    return
+    return [mod, fin_test_df]
