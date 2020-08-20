@@ -81,10 +81,10 @@ def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
     for metric in tmp_metric_dict.keys():
         if "_scores" in metric:
             f.write(metric + " scores: " + str(tmp_metric_dict[metric]) + " \n")
-            f.write(metric + "mean: " + str(tmp_metric_dict[metric].mean()) + " \n")
+            f.write(metric + " mean: " + str(tmp_metric_dict[metric].mean()) + " \n")
             f.write(
                 metric
-                + "standard deviation: "
+                + " standard deviation: "
                 + str(tmp_metric_dict[metric].std())
                 + " \n"
             )
