@@ -56,8 +56,6 @@ def log_results(fl_name=None, fl_path=None, log_data=None):
     )
     save_path = fl_path + fl_name
 
-    print("File path for data log: " + save_path)
-
     f = open(save_path, "w")
 
     if "note" in log_data.keys():
@@ -72,17 +70,17 @@ def log_results(fl_name=None, fl_path=None, log_data=None):
     f.write("Features included: " + "\n" + str(log_data["features"]) + "\n \n")
     f.write("Params of model: " + str(log_data["params"]) + " \n \n")
 
-    f.write("Silhouette Score: " + str(log_data["Silhouette Score"]))
+    f.write("Silhouette Score: " + str(log_data["Silhouette Score"]) + "\n")
     if "WSS" in log_data.keys():
-        f.write("WSS Total: " + str(log_data["WSS"]))
+        f.write("WSS Total: " + str(log_data["WSS"]) + "\n")
 
-    f.write("Number of Observations per Cluster")
+    f.write("Number of Observations per Cluster \n")
     f.write(str(log_data["data"]["Cluster"].value_counts()) + "\n\n")
 
     f.write("Base Cluster Stats \n")
     pd.set_option("display.max_rows", None)
     pd.set_option("display.max_colwidth", 250)
-    f.write(log_data['base_cluster_stats'].T.to_string())
+    f.write(log_data["base_cluster_stats"].T.to_string())
     f.write("\n\n")
 
     f.close()

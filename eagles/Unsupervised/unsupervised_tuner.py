@@ -246,19 +246,27 @@ def eval_clusters(
         data = pd.DataFrame(data)
         data.columns = ft_cols
 
-    if method in ["kmeans", "agglomerativeclustering"] and "n_cluster" not in params.keys():
+    if (
+        method in ["kmeans", "agglomerativeclustering"]
+        and "n_cluster" not in params.keys()
+    ):
         params["n_clusters"] = n_clusters
 
     model = _init_method(model=method, params=params)
     pred_labels = model.fit_predict(data[ft_cols])
     data["Cluster"] = model.labels_
+    data["Cluster"] = data["Cluster"].astype(str)
 
     sil_score = silhouette_score(data, pred_labels)
 
     print("Silhouette Score: " + str(round(sil_score, 2)))
     if type(model).__name__ == "Pipeline":
         if type(model.named_steps["model"]).__name__ == "KMeans":
-            print("WSS Total: " + str(round(model.named_steps["model"].inertia_, 2)) + "\n")
+            print(
+                "WSS Total: "
+                + str(round(model.named_steps["model"].inertia_, 2))
+                + "\n"
+            )
     elif method == "kmeans":
         print("WSS Total: " + str(round(model.inertia_, 2)) + "\n")
 
@@ -271,7 +279,7 @@ def eval_clusters(
     base_cluster_stats = ceu.create_summary_table(
         data=data, plot_dims=plot_dims, summary_stats=summary_stats
     )
-    base_cluster_stats = round(base_cluster_stats,2)
+    base_cluster_stats = round(base_cluster_stats, 2)
     print("Base Cluster Stats \n")
     print(base_cluster_stats.T)
     print("\n\n")
@@ -296,12 +304,12 @@ def eval_clusters(
 
     if log:
         log_data = {
-            "n_clusters":n_clusters
-            , "features":ft_cols
-            , "Silhouette Score":round(sil_score, 2)
-            , "data":data
-            , "params": model.get_params()
-            , "base_cluster_stats":round(base_cluster_stats,2)
+            "n_clusters": n_clusters,
+            "features": ft_cols,
+            "Silhouette Score": round(sil_score, 2),
+            "data": data,
+            "params": model.get_params(),
+            "base_cluster_stats": round(base_cluster_stats, 2),
         }
 
         if type(model).__name__ == "Pipeline":
@@ -315,14 +323,13 @@ def eval_clusters(
 
         if type(model).__name__ == "Pipeline":
             if type(model.named_steps["model"]).__name__ == "KMeans":
-                log_data["WSS"] = round(model.named_steps["model"].inertia_,2)
+                log_data["WSS"] = round(model.named_steps["model"].inertia_, 2)
         elif method == "kmeans":
             log_data["WSS"] = round(model.inertia_, 2)
 
         if log_note:
-            log_data['note'] = log_note
+            log_data["note"] = log_note
 
         lu.log_results(fl_name=log_name, fl_path=log_path, log_data=log_data)
-
 
     return data

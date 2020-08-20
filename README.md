@@ -199,14 +199,11 @@ however this may result in unexpected behavior.
 
 
 ## Packages Required (see requirements.txt for versions)
-- gensim
-- imbalanced-learn
 - kneed
 - matplotlib
 - nltk
 - numpy
 - pandas
-- pingouin
 - scikit-learn
 - scikit-optimize
 - scipy
