@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 sns.set_style("whitegrid")
 
 
-def plot_dendogram(data):
+def _plot_dendogram(data):
     dendrogram = sch.dendrogram(sch.linkage(data, method="average"))
     return
 
@@ -85,6 +85,6 @@ def plot_ft_relationships(data=None, plot_dims=[]):
 
     _ = plt.figure(figsize=(10, 10))
     featureRels = sns.pairplot(data[plot_dims], hue="Cluster", corner=True)
-    featureRels.fig.suptitle("Feature Relationships by Cluster")
+    _ = featureRels.fig.suptitle("Feature Relationships by Cluster", fontsize=16)
 
     return

@@ -1,5 +1,6 @@
 import pandas as pd
-import pingouin as pg
+from scipy import stats
+from statsmodels.stats import multicomp as mc
 
 
 def create_summary_table(data, plot_dims=[], summary_stats=[]):
@@ -24,34 +25,31 @@ def run_cluster_comps(data=None, ft_cols=None):
     # Get the continuous columns
     cont_fts = [col for col in ft_cols if col not in bin_fts]
     # init the sig df and post hoc tests df
-    sig_results = {"Feature": list(), "p Val": list(), "Effect Size": list()}
+    sig_results = {"Feature": list(), "p Val": list(), "Stat Test": list()}
     post_hocs = pd.DataFrame()
 
     # perform chi squared on the binary
     for ft in bin_fts:
-        expected, observed, stats = pg.chi2_independence(data, x="Cluster", y=ft)
-        if stats[stats["test"] == "log-likelihood"]["p"].iloc[0] < 0.05:
+        crosstab = pd.crosstab(data["Cluster"], data[ft])
+        res = stats.chi2_contingency(crosstab)
+
+        if res[1] < 0.05:
             sig_results["Feature"].append(ft)
-            sig_results["p Val"].append(
-                stats[stats["test"] == "log-likelihood"]["p"].iloc[0]
-            )
-            sig_results["Effect Size"].append(
-                stats[stats["test"] == "log-likelihood"]["cramer"].iloc[0]
-            )
+            sig_results["p Val"].append(res[1])
+            sig_results["Stat Test"].append("chi2")
 
     # perform one way anova on the continuous
     sig_cont = list()
     for ft in cont_fts:
-        aov = pg.anova(data=data, dv=ft, between="Cluster", detailed=True)
-        if aov[aov["Source"] == "Cluster"]["p-unc"].iloc[0] < 0.05:
+
+        result = data.groupby("Cluster")[ft].apply(list)
+        fval, p = stats.f_oneway(*result)
+
+        if p < 0.05:
             sig_results["Feature"].append(ft)
             sig_cont.append(ft)
-            sig_results["p Val"].append(
-                aov[aov["Source"] == "Cluster"]["p-unc"].iloc[0]
-            )
-            sig_results["Effect Size"].append(
-                aov[aov["Source"] == "Cluster"]["np2"].iloc[0]
-            )
+            sig_results["p Val"].append(p)
+            sig_results["Stat Test"].append("ANOVA")
 
     # store the sig results in df
     sig_df = pd.DataFrame(sig_results)
@@ -61,21 +59,20 @@ def run_cluster_comps(data=None, ft_cols=None):
 
     elif len(sig_cont) > 0:
         for ft in sig_cont:
-            pt = pg.pairwise_tukey(data=data, dv=ft, between="Cluster")
-            pt = pt[pt["p-tukey"] < 0.005]
-            pt = pt[["A", "B", "diff", "p-tukey", "hedges"]]
-            pt["Feature"] = ft
+            res = mc.pairwise_tukeyhsd(
+                endog=data[ft], groups=data["Cluster"], alpha=0.05
+            )
 
-            post_hocs = pd.concat([post_hocs, pt])
+            results_summary = res.summary()
+            res_df = pd.read_html(results_summary.as_html(), header=0, index_col=0)[
+                0
+            ].reset_index()
+            res_df = res_df[res_df["reject"] == True]
+            res_df["feature"] = ft
 
-        post_hocs = post_hocs[["Feature", "A", "B", "diff", "p-tukey", "hedges"]]
-        post_hocs.rename(
-            columns={
-                "diff": "Diff Between Means",
-                "p-tukey": "p Val",
-                "hedges": "Effect Size",
-            },
-            inplace=True,
-        )
+            post_hocs = pd.concat([post_hocs, res_df])
+
+        post_hocs = post_hocs[["feature", "group1", "group2", "meandiff", "p-adj"]]
+        post_hocs["stat test"] = "Tukey HSD"
 
         return sig_df, post_hocs
