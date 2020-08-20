@@ -10,7 +10,7 @@ This repository contains utilities to perform tasks relating to data science
 including supervised and unsupervised machine learning, data exploration and statistical testing.
 The functions primarily act as utility wrappers.
 
-For examples of how to used the functions contained within the package see the following jupyter notebooks:
+For examples of how to use the functions contained within the package see the following jupyter notebooks:
 - Supervised Tuning.ipynb
 - Unsupervised Tuning.ipynb
 
