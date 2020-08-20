@@ -17,7 +17,7 @@ For examples of how to used the functions contained within the package see the f
 
 
 ## Install
-**This package is still under heavy development and testing. ** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles/tree/master ```  .  Once installed it can be imported like any other python package. For example:
+**This package is still under heavy development and testing. ** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles.git#egg=eagles" ```  .  Once installed it can be imported like any other python package. For example:
 
 ```
 from eagles.Supervised import supervised_tuner as st
