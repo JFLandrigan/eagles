@@ -61,6 +61,8 @@ def find_caps(
         cap_dict["75th_Percentile"] = list()
         cap_dict["90th_Percentile"] = list()
     if "sd" in stats:
+        # TODO Determine the skew of the data if there is any and then get values accordingly
+
         cap_dict["2_SD"] = list()
         cap_dict["3_SD"] = list()
 
@@ -70,8 +72,10 @@ def find_caps(
             cap_dict["75th_Percentile"].append(df[col].quantile(0.75))
             cap_dict["90th_Percentile"].append(df[col].quantile(0.90))
         if "sd" in stats:
-            cap_dict["2_SD"].append(df[col].std() * 2)
-            cap_dict["3_SD"].append(df[col].std() * 3)
+            # TODO Determine the skew of the data if there is any and then get values accordingly
+
+            cap_dict["2_SD"].append(df[col].mean() + (df[col].std() * 2))
+            cap_dict["3_SD"].append(df[col].mean() + (df[col].std() * 3))
 
         if plot:
             _plot_distribution_caps(df=df, col=col, caps=cap_dict, stats=stats)
