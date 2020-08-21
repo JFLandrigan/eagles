@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 import logging
 
@@ -23,10 +24,19 @@ def _plot_distribution_caps(
     ind = caps["Feature"].index(col)
 
     _ = plt.figure(figsize=(5, 5))
-    ax = sns.kdeplot(df[col], shade=True)
+    ax = sns.kdeplot(df[col], shade=True, legend=False)
     if "sd" in stats:
-        _ = plt.axvline(caps["2_SD"][ind])
-        _ = plt.axvline(caps["3_SD"][ind])
+        if caps["skew"][ind] > 0.1:
+            _ = plt.axvline(caps["plus_2_SD"][ind])
+            _ = plt.axvline(caps["plus_3_SD"][ind])
+        elif caps["skew"][ind] < -0.1:
+            _ = plt.axvline(caps["minus_2_SD"][ind])
+            _ = plt.axvline(caps["minus_3_SD"][ind])
+        else:
+            _ = plt.axvline(caps["plus_2_SD"][ind])
+            _ = plt.axvline(caps["plus_3_SD"][ind])
+            _ = plt.axvline(caps["minus_2_SD"][ind])
+            _ = plt.axvline(caps["minus_3_SD"][ind])
     if "percentile" in stats:
         _ = plt.axvline(caps["75th_Percentile"][ind])
         _ = plt.axvline(caps["90th_Percentile"][ind])
@@ -61,10 +71,11 @@ def find_caps(
         cap_dict["75th_Percentile"] = list()
         cap_dict["90th_Percentile"] = list()
     if "sd" in stats:
-        # TODO Determine the skew of the data if there is any and then get values accordingly
-
-        cap_dict["2_SD"] = list()
-        cap_dict["3_SD"] = list()
+        cap_dict["plus_2_SD"] = list()
+        cap_dict["plus_3_SD"] = list()
+        cap_dict["minus_2_SD"] = list()
+        cap_dict["minus_3_SD"] = list()
+        cap_dict["skew"] = list()
 
     for col in cols:
         cap_dict["Feature"].append(col)
@@ -72,10 +83,23 @@ def find_caps(
             cap_dict["75th_Percentile"].append(df[col].quantile(0.75))
             cap_dict["90th_Percentile"].append(df[col].quantile(0.90))
         if "sd" in stats:
-            # TODO Determine the skew of the data if there is any and then get values accordingly
-
-            cap_dict["2_SD"].append(df[col].mean() + (df[col].std() * 2))
-            cap_dict["3_SD"].append(df[col].mean() + (df[col].std() * 3))
+            skew = df[col].skew()
+            cap_dict["skew"].append(skew)
+            if skew > 0.1:
+                cap_dict["plus_2_SD"].append(df[col].mean() + (df[col].std() * 2))
+                cap_dict["plus_3_SD"].append(df[col].mean() + (df[col].std() * 3))
+                cap_dict["minus_2_SD"].append(np.nan)
+                cap_dict["minus_3_SD"].append(np.nan)
+            elif skew < -0.1:
+                cap_dict["plus_2_SD"].append(np.nan)
+                cap_dict["plus_3_SD"].append(np.nan)
+                cap_dict["minus_2_SD"].append(df[col].mean() - (df[col].std() * 2))
+                cap_dict["minus_3_SD"].append(df[col].mean() - (df[col].std() * 3))
+            else:
+                cap_dict["plus_2_SD"].append(df[col].mean() + (df[col].std() * 2))
+                cap_dict["plus_3_SD"].append(df[col].mean() + (df[col].std() * 3))
+                cap_dict["minus_2_SD"].append(df[col].mean() - (df[col].std() * 2))
+                cap_dict["minus_3_SD"].append(df[col].mean() - (df[col].std() * 3))
 
         if plot:
             _plot_distribution_caps(df=df, col=col, caps=cap_dict, stats=stats)
