@@ -1,31 +1,21 @@
+from eagles.Exploratory.utils import plot_utils as pu
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+from IPython.display import display
 
-sns.set_style("whitegrid")
-
-
-def plot_missing_values(df: pd.DataFrame = None, cols: list = []) -> None:
-
-    if len(cols) == 0:
-        cols = df.columns
-
-    _ = plt.figure(figsize=(8, 8))
-    cmap = sns.cubehelix_palette(8, start=0, rot=0, dark=0, light=0.95, as_cmap=True)
-    ax = sns.heatmap(data=pd.isnull(df[cols]), cmap=cmap, cbar=False)
-    _ = ax.set_title("Missing Data")
-
-    return None
+pd.set_option("display.max_rows", None)
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", None)
+pd.set_option("display.max_colwidth", None)
 
 
 def get_proportion_missing(
     df: pd.DataFrame = None, cols: list = [], plot=False
-) -> None:
+) -> pd.DataFrame:
     """
     This function finds the percent missing per column in a pandas dataframe
     :param df: pandas dataframe
     :param cols: list of column names
-    :return: None
+    :return: Dataframe with col of feature names and col for percent missing
     """
 
     if len(cols) == 0:
@@ -36,9 +26,10 @@ def get_proportion_missing(
     missing_value_df.columns = ["feature", "percent_missing"]
 
     missing_value_df.sort_values("percent_missing", ascending=False, inplace=True)
-    print(missing_value_df)
 
     if plot:
-        plot_missing_values(df=df, cols=cols)
+        pu.plot_missing_values(df=df, cols=cols)
 
-    return None
+    display(missing_value_df)
+
+    return missing_value_df

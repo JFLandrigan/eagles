@@ -1,48 +1,16 @@
+from eagles.Exploratory.utils import plot_utils as pu
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
+from IPython.display import display
+
+pd.set_option("display.max_rows", None)
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", None)
+pd.set_option("display.max_colwidth", None)
 
 import logging
 
 logger = logging.getLogger(__name__)
-sns.set_style("whitegrid")
-
-
-def _plot_distribution_caps(
-    df: pd.DataFrame = None, col: str = None, caps: dict = {}, stats: list = []
-):
-    """
-    Function to plot the distributions and their potential caps
-    :param df: pandas dataframe with col to plotted
-    :param col: string name of the column
-    :param caps: Dictionary containing the caps
-    :param stats: list of stats to plot
-    :return:
-    """
-
-    ind = caps["Feature"].index(col)
-
-    _ = plt.figure(figsize=(5, 5))
-    ax = sns.kdeplot(df[col], shade=True, legend=False)
-    if "sd" in stats:
-        if caps["skew"][ind] > 0.1:
-            _ = plt.axvline(caps["plus_2_SD"][ind])
-            _ = plt.axvline(caps["plus_3_SD"][ind])
-        elif caps["skew"][ind] < -0.1:
-            _ = plt.axvline(caps["minus_2_SD"][ind])
-            _ = plt.axvline(caps["minus_3_SD"][ind])
-        else:
-            _ = plt.axvline(caps["plus_2_SD"][ind])
-            _ = plt.axvline(caps["plus_3_SD"][ind])
-            _ = plt.axvline(caps["minus_2_SD"][ind])
-            _ = plt.axvline(caps["minus_3_SD"][ind])
-    if "percentile" in stats:
-        _ = plt.axvline(caps["75th_Percentile"][ind])
-        _ = plt.axvline(caps["90th_Percentile"][ind])
-    _ = plt.title(col + " Distribution Caps")
-
-    return
 
 
 def find_caps(
@@ -102,8 +70,10 @@ def find_caps(
                 cap_dict["minus_3_SD"].append(df[col].mean() - (df[col].std() * 3))
 
         if plot:
-            _plot_distribution_caps(df=df, col=col, caps=cap_dict, stats=stats)
+            pu.plot_distribution_caps(df=df, col=col, caps=cap_dict, stats=stats)
 
     cap_df = pd.DataFrame(cap_dict)
+
+    display(cap_df)
 
     return cap_df
