@@ -32,9 +32,8 @@ def get_proportion_missing(
         cols = df.columns
 
     percent_missing = df[cols].isnull().sum() * 100 / df.shape[0]
-    missing_value_df = pd.DataFrame(
-        {"column_name": cols, "percent_missing": percent_missing}
-    )
+    missing_value_df = pd.DataFrame(percent_missing).reset_index()
+    missing_value_df.columns = ["feature", "percent_missing"]
 
     missing_value_df.sort_values("percent_missing", ascending=False, inplace=True)
     print(missing_value_df)
@@ -43,4 +42,3 @@ def get_proportion_missing(
         plot_missing_values(df=df, cols=cols)
 
     return None
-
