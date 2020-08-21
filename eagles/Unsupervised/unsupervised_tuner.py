@@ -3,6 +3,8 @@ from eagles.Unsupervised.utils import cluster_eval_utils as ceu
 from eagles.Unsupervised.utils import logger_utils as lu
 import numpy as np
 import pandas as pd
+from IPython.display import display
+
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import silhouette_score
@@ -10,6 +12,11 @@ from kneed import KneeLocator
 import logging
 
 logger = logging.getLogger(__name__)
+
+pd.set_option("display.max_rows", None)
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", None)
+pd.set_option("display.max_colwidth", None)
 
 
 def _find_max_sil(res_dict):
@@ -281,7 +288,7 @@ def eval_clusters(
     )
     base_cluster_stats = round(base_cluster_stats, 2)
     print("Base Cluster Stats \n")
-    print(base_cluster_stats.T)
+    display(base_cluster_stats.T)
     print("\n\n")
 
     if run_stat_comps:

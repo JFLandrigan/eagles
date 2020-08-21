@@ -7,6 +7,7 @@ from eagles.Supervised.utils import metric_utils as mu
 import time
 import pandas as pd
 import numpy as np
+from IPython.display import display
 
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
@@ -416,7 +417,7 @@ def model_eval(
         bt = tu.create_bin_table(
             df=prob_df, bins=bins, bin_col="probab", actual_col="actual"
         )
-        print(bt)
+        display(bt)
 
     if "roc_auc" in metrics:
         pu.plot_roc_curve(y_true=y_test, pred_probs=pred_probs)
