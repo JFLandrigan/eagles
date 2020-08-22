@@ -56,11 +56,36 @@ def run_battery(
         cols = data.columns
 
     if len(tests) == 0:
-        tests = ["missing", "descriptive", "distributions"]
+        tests = ["info", "missing", "descriptive", "distributions"]
 
     return_dict = {}
 
     for test in tests:
+        if "info" in tests:
+            n_rows = data[cols].shape[0]
+            n_cols = data[cols].shape[1]
+            memory_stat = data[cols].memory_usage(index=True).sum()
+            total_percent_missing = round(
+                (
+                    data[cols].isna().sum().sum()
+                    / (data[cols].shape[0] * data[cols].shape[1])
+                )
+                * 100,
+                2,
+            )
+            info_df = pd.DataFrame(
+                {
+                    "stat": [
+                        "n_rows",
+                        "n_cols",
+                        "total_memory",
+                        "total_percent_missing",
+                    ],
+                    "value": [n_rows, n_cols, memory_stat, total_percent_missing],
+                }
+            )
+            display(info_df)
+            return_dict["info"] = info_df
         if test == "missing":
             msg_df = missing.get_proportion_missing(df=data, cols=cols, plot=plot)
             return_dict["missing"] = msg_df

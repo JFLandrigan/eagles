@@ -69,11 +69,10 @@ def find_caps(
                 cap_dict["minus_2_SD"].append(df[col].mean() - (df[col].std() * 2))
                 cap_dict["minus_3_SD"].append(df[col].mean() - (df[col].std() * 3))
 
-        if plot:
-            pu.plot_distribution_caps(df=df, col=col, caps=cap_dict, stats=stats)
-
     cap_df = pd.DataFrame(cap_dict)
-
     display(cap_df)
+
+    if plot:
+        pu.plot_distributions(data=df, cols=cols, caps=cap_dict)
 
     return cap_df
