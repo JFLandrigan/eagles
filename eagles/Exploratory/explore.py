@@ -61,7 +61,7 @@ def run_battery(
     return_dict = {}
 
     for test in tests:
-        if "info" in tests:
+        if test == "info":
             n_rows = data[cols].shape[0]
             n_cols = data[cols].shape[1]
             memory_stat = data[cols].memory_usage(index=True).sum()
@@ -86,7 +86,7 @@ def run_battery(
             )
             display(info_df)
             return_dict["info"] = info_df
-        if test == "missing":
+        elif test == "missing":
             msg_df = missing.get_proportion_missing(df=data, cols=cols, plot=plot)
             return_dict["missing"] = msg_df
         elif test == "descriptive":
