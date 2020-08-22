@@ -1,6 +1,6 @@
 import pandas as pd
-from eagles.Exploratory import missing
-from eagles.Exploratory import distributions
+from eagles.Exploratory import missing, distributions, categories
+from eagles.Exploratory.utils import plot_utils as pu
 from IPython.display import display
 
 pd.set_option("display.max_rows", None)
@@ -9,12 +9,29 @@ pd.set_option("display.width", None)
 pd.set_option("display.max_colwidth", None)
 
 
+def get_correlations(
+    data: pd.DataFrame = None, cols: list = [], plot: bool = False
+) -> pd.DataFrame:
+    if len(cols) == 0:
+        cols = data.columns
+
+    corr_df = data[cols].corr()
+
+    if plot:
+        pu.plot_correlations(data=data, cols=cols)
+
+    return corr_df
+
+
 def get_base_descriptives(
     data: pd.DataFrame = None, cols: list = [], stats: list = []
 ) -> pd.DataFrame:
 
     if len(cols) == 0:
         cols = data.columns
+
+    # filter out object cols
+    cols = [col for col in cols if data[col].dtype != "O"]
 
     if len(stats) == 0:
         stats = ["mean", "median", "std", "min", "max", "skew"]
@@ -49,14 +66,32 @@ def get_base_descriptives(
 
 
 def run_battery(
-    data: pd.DataFrame = None, cols: list = [], tests: list = [], plot=True
+    data: pd.DataFrame = None,
+    categorical_cols: list = [],
+    continuous_cols: list = [],
+    tests: list = [],
+    gen_stats: list = [],
+    cap_stats: list = [],
+    plot=True,
 ) -> dict:
 
-    if len(cols) == 0:
-        cols = data.columns
+    if len(categorical_cols) == 0:
+        categorical_cols = [col for col in data.columns if data[col].dtype == "O"]
+
+    if len(continuous_cols) == 0:
+        continuous_cols = [col for col in data.columns if data[col].dtype != "O"]
+
+    cols = categorical_cols + continuous_cols
 
     if len(tests) == 0:
-        tests = ["info", "missing", "descriptive", "distributions"]
+        tests = [
+            "info",
+            "missing",
+            "descriptive",
+            "distributions",
+            "correlations",
+            "category_stats",
+        ]
 
     return_dict = {}
 
@@ -90,13 +125,23 @@ def run_battery(
             msg_df = missing.get_proportion_missing(df=data, cols=cols, plot=plot)
             return_dict["missing"] = msg_df
         elif test == "descriptive":
-            stat_df = get_base_descriptives(data=data, cols=cols, stats=[])
+            stat_df = get_base_descriptives(
+                data=data, cols=continuous_cols, stats=gen_stats
+            )
             return_dict["descriptives"] = stat_df
         elif test == "distributions":
             dist_df = distributions.find_caps(
-                df=data, cols=cols, stats=["sd"], plot=plot
+                data=data, cols=continuous_cols, stats=cap_stats, plot=plot
             )
             return_dict["distributions"] = dist_df
+        elif test == "correlations":
+            corr_df = get_correlations(data=data, cols=continuous_cols, plot=plot)
+            return_dict["correlations"] = corr_df
+        elif test == "category_stats":
+            cat_df = categories.get_sample_stats(
+                data=data, cols=categorical_cols, plot=plot
+            )
+            return_dict["categorical_stats"] = cat_df
         else:
             print(test + " not supported")
 

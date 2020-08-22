@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 def find_caps(
-    df: pd.DataFrame = None, cols: list = [], stats: list = [], plot=False
+    data: pd.DataFrame = None, cols: list = [], stats: list = [], plot=False
 ) -> pd.DataFrame:
     """
     This function finds potential cap points for distributions and returns them by feature in a pandas dataframe
-    :param df: pandas dataframe containing the data to be analyzed
+    :param data: pandas dataframe containing the data to be analyzed
     :param cols: list of column names to analyze
     :param stats: list of stats to find. Keys include 'sd' and/or 'percentile'
     :param plot: boolean indicator whether to plot distribs or not
@@ -29,10 +29,13 @@ def find_caps(
         return None
 
     if len(cols) == 0:
-        cols = df.columns
+        cols = data.columns
+
+    # filter out object cols
+    cols = [col for col in cols if data[col].dtype != "O"]
 
     if len(stats) == 0:
-        stats = ["percentile", "sd"]
+        stats = ["sd"]
 
     cap_dict = {"Feature": list()}
     if "percentile" in stats:
@@ -48,31 +51,32 @@ def find_caps(
     for col in cols:
         cap_dict["Feature"].append(col)
         if "percentile" in stats:
-            cap_dict["75th_Percentile"].append(df[col].quantile(0.75))
-            cap_dict["90th_Percentile"].append(df[col].quantile(0.90))
+            cap_dict["75th_Percentile"].append(data[col].quantile(0.75))
+            cap_dict["90th_Percentile"].append(data[col].quantile(0.90))
+            cap_dict["skew"].append(np.nan)
         if "sd" in stats:
-            skew = df[col].skew()
+            skew = data[col].skew()
             cap_dict["skew"].append(skew)
-            if skew > 0.1:
-                cap_dict["plus_2_SD"].append(df[col].mean() + (df[col].std() * 2))
-                cap_dict["plus_3_SD"].append(df[col].mean() + (df[col].std() * 3))
+            if skew > 0.2:
+                cap_dict["plus_2_SD"].append(data[col].mean() + (data[col].std() * 2))
+                cap_dict["plus_3_SD"].append(data[col].mean() + (data[col].std() * 3))
                 cap_dict["minus_2_SD"].append(np.nan)
                 cap_dict["minus_3_SD"].append(np.nan)
-            elif skew < -0.1:
+            elif skew < -0.2:
                 cap_dict["plus_2_SD"].append(np.nan)
                 cap_dict["plus_3_SD"].append(np.nan)
-                cap_dict["minus_2_SD"].append(df[col].mean() - (df[col].std() * 2))
-                cap_dict["minus_3_SD"].append(df[col].mean() - (df[col].std() * 3))
+                cap_dict["minus_2_SD"].append(data[col].mean() - (data[col].std() * 2))
+                cap_dict["minus_3_SD"].append(data[col].mean() - (data[col].std() * 3))
             else:
-                cap_dict["plus_2_SD"].append(df[col].mean() + (df[col].std() * 2))
-                cap_dict["plus_3_SD"].append(df[col].mean() + (df[col].std() * 3))
-                cap_dict["minus_2_SD"].append(df[col].mean() - (df[col].std() * 2))
-                cap_dict["minus_3_SD"].append(df[col].mean() - (df[col].std() * 3))
+                cap_dict["plus_2_SD"].append(data[col].mean() + (data[col].std() * 2))
+                cap_dict["plus_3_SD"].append(data[col].mean() + (data[col].std() * 3))
+                cap_dict["minus_2_SD"].append(data[col].mean() - (data[col].std() * 2))
+                cap_dict["minus_3_SD"].append(data[col].mean() - (data[col].std() * 3))
 
     cap_df = pd.DataFrame(cap_dict)
     display(cap_df)
 
     if plot:
-        pu.plot_distributions(data=df, cols=cols, caps=cap_dict)
+        pu.plot_distributions(data=data, cols=cols, caps=cap_dict)
 
     return cap_df
