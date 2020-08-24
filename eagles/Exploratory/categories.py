@@ -1,6 +1,9 @@
 from eagles.Exploratory.utils import plot_utils as pu
 import pandas as pd
 from IPython.display import display
+import logging
+
+logger = logging.getLogger(__name__)
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -47,3 +50,22 @@ def get_sample_stats(
         pu.plot_category_histograms(data=data, cols=cols)
 
     return cat_df
+
+
+def get_multi_group_stats(
+    data: pd.DataFrame = None, group_cols: list = None
+) -> pd.DataFrame:
+
+    if group_cols is None:
+        logger.warning("No grouping cols passed in")
+        return None
+
+    tmp = data.copy(deep=True)
+    tmp["count"] = [i for i in range(len(data))]
+
+    grp = tmp.groupby(group_cols, as_index=False)["count"].agg("count")
+    grp["proportion_samples"] = round((grp["count"] / len(tmp)) * 100, 2)
+
+    display(grp)
+
+    return grp
