@@ -1,9 +1,11 @@
 from eagles.Supervised import config
 from sklearn.ensemble import (
     RandomForestClassifier,
+    ExtraTreesClassifier,
     GradientBoostingClassifier,
     AdaBoostClassifier,
     RandomForestRegressor,
+    ExtraTreesRegressor,
     GradientBoostingRegressor,
     AdaBoostRegressor,
 )
@@ -49,6 +51,8 @@ def init_model(model=None, params={}):
 
     if model == "rf_clf":
         mod = RandomForestClassifier(**params)
+    elif model == "etc_clf":
+        mod = ExtraTreesClassifier(**params)
     elif model == "gbc_clf":
         mod = GradientBoostingClassifier(**params)
     elif model == "dt_clf":
@@ -65,6 +69,8 @@ def init_model(model=None, params={}):
         mod = AdaBoostClassifier(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
+    elif model == "etc_rgr":
+        mod = ExtraTreesRegressor(**params)
     elif model == "gbc_regress":
         mod = GradientBoostingRegressor(**params)
     elif model == "dt_regress":

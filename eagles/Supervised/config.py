@@ -1,5 +1,6 @@
 clf_models = [
     "RandomForestClassifier",
+    "ExtraTreesClassifier",
     "GradientBoostingClassifier",
     "DecisionTreeClassifier",
     "LogisticRegression",
@@ -13,6 +14,7 @@ clf_models = [
 
 regress_models = [
     "RandomForestRegressor",
+    "ExtraTreesRegressor",
     "GradientBoostingRegressor",
     "DecisionTreeRegressor",
     "LinearRegression",
