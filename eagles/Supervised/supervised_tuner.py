@@ -133,10 +133,11 @@ def tune_test_model(
         features = list(X.columns)
 
     # ensure that a tune metric is defined
-    if tune_metric is None and problem_type == "clf":
-        tune_metric = "f1"
-    else:
-        tune_metric = "neg_mean_squared_error"
+    if tune_metric is None:
+        if problem_type == "clf":
+            tune_metric = "f1"
+        else:
+            tune_metric = "neg_mean_squared_error"
 
     # ensure that eval metrics have been defined
     if len(eval_metrics) == 0 and problem_type == "clf":
