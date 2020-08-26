@@ -17,7 +17,7 @@ For examples of how to use the functions contained within the package see the fo
 
 
 ## Install
-**This package is still under heavy development and testing. ** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles.git#"egg=eagles" ```  .  Once installed it can be imported like any other python package. For example:
+**This package is still under heavy development and testing.** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles.git#"egg=eagles" ```  .  Once installed it can be imported like any other python package. For example:
 
 ```
 from eagles.Supervised import supervised_tuner as st
@@ -32,17 +32,18 @@ Note that the functions primarily support sklearn model objects however if a mod
 
 ### Supervised
 
-| Classification                         | Regression                                |
-| -------------------------------------- | ----------------------------------------- |
-| "rf_clf" : RandomForestClassifier      | "rf_regress" : RandomForestRegressor      |
-| "gbc_clf" : GradientBoostingClassifier | "gbc_regress" : GradientBoostingRegressor |
-| "dt_clf" : DecisionTreeClassifier      | "dt_regress" : DecisionTreeRegressor      |
-| "logistic" : LogisticRegression        | "linear" : LinearRegression               |
-| "svc" : SVC                            | "lasso" : Lasso                           |
-| "knn_clf" : KNeighborsClassifier       | "elastic" : ElasticNet                    |
-| "nn" : MLPClassifier                   | "svr" : SVR                               |
-| "ada_clf" : AdaBoostClassifier         | "knn_regress" : KNeighborsRegressor       |
-|                                        | "ada_regress" : AdaBoostRegressor         |
+| Classification                        | Regression                               |
+| ------------------------------------- | ---------------------------------------- |
+| "rf_clf" : RandomForestClassifier     | "rf_regress" : RandomForestRegressor     |
+| "gb_clf" : GradientBoostingClassifier | "gb_regress" : GradientBoostingRegressor |
+| "dt_clf" : DecisionTreeClassifier     | "dt_regress" : DecisionTreeRegressor     |
+| "logistic" : LogisticRegression       | "linear" : LinearRegression              |
+| "svc" : SVC                           | "lasso" : Lasso                          |
+| "knn_clf" : KNeighborsClassifier      | "elastic" : ElasticNet                   |
+| "nn" : MLPClassifier                  | "svr" : SVR                              |
+| "ada_clf" : AdaBoostClassifier        | "knn_regress" : KNeighborsRegressor      |
+| "et_clf": ExtraTreesClassifier        | "ada_regress" : AdaBoostRegressor        |
+|                                       | "et_regress": ExtraTreesRegressor        |
 
 ### Unsupervised
 
@@ -66,7 +67,7 @@ When using ```supervised_tuner.tune_test_model()``` the tune_metric argument is 
 | 'f1'                                                         | 'rmse' - root mean square error                              |
 | 'precision'                                                  | 'mae' - mean absolute error                                  |
 | 'recall'                                                     | 'mape' - mean absolute percent error (note zeros are excluded) |
-| 'roc_auc' - Area Under the Receiver Operating Characteristic Curve | 'r2'                                                         |
+| 'roc_auc' - Area Under the Receiver Operating Characteristic Curve | 'r2' - r squared                                             |
 | 'precision_recall_auc' - Area Under the Precision Recall Curve |                                                              |
 
 ### Unsupervised
