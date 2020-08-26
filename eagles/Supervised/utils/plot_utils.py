@@ -15,6 +15,7 @@ def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None, plot_ti
         ("RandomForest" in mod_type)
         or ("GradientBoosting" in mod_type)
         or ("DecisionTree" in mod_type)
+        or ("ExtraTrees" in mod_type)
     ):
         plt.figure(figsize=(10, 10), dpi=80, facecolor="w", edgecolor="k")
         ax = sns.barplot(x="Importance", y="Feature", data=ft_df)
