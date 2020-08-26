@@ -29,20 +29,31 @@ def plot_distributions(
         ax = sns.kdeplot(data[col], shade=True, legend=False)
 
         if caps:
-            ind = caps["Feature"].index(col)
+            ind = caps["feature"].index(col)
+            _ = plt.axvline(
+                caps["mean"][ind], linestyle="--", color="black", label="mean"
+            )
 
             if "plus_2_SD" in caps.keys():
-                _ = plt.axvline(caps["plus_2_SD"][ind], label="plus 2 SD")
+                _ = plt.axvline(caps["plus_2_SD"][ind], color="red", label="plus 2 SD")
             if "plus_3_SD" in caps.keys():
-                _ = plt.axvline(caps["plus_3_SD"][ind], label="plus 3 SD")
+                _ = plt.axvline(caps["plus_3_SD"][ind], color="red", label="plus 3 SD")
             if "minus_2_SD" in caps.keys():
-                _ = plt.axvline(caps["minus_2_SD"][ind], label="minus 2 SD")
+                _ = plt.axvline(
+                    caps["minus_2_SD"][ind], color="red", label="minus 2 SD"
+                )
             if "minus_3_SD" in caps.keys():
-                _ = plt.axvline(caps["minus_3_SD"][ind], label="minus 3 SD")
+                _ = plt.axvline(
+                    caps["minus_3_SD"][ind], color="red", label="minus 3 SD"
+                )
             if "75th_Percentile" in caps.keys():
-                _ = plt.axvline(caps["75th_Percentile"][ind], label="75th percentile")
+                _ = plt.axvline(
+                    caps["75th_Percentile"][ind], color="red", label="75th percentile"
+                )
             if "90th_Percentile" in caps.keys():
-                _ = plt.axvline(caps["90th_Percentile"][ind], label="90th percentile")
+                _ = plt.axvline(
+                    caps["90th_Percentile"][ind], color="red", label="90th percentile"
+                )
 
         _ = plt.title(col + " Distribution")
 

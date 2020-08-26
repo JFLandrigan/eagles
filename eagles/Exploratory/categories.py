@@ -12,13 +12,14 @@ pd.set_option("display.max_colwidth", None)
 
 
 def get_sample_stats(
-    data: pd.DataFrame = None, cols: list = [], plot=False
+    data: pd.DataFrame = None, cols: list = [], disp=True, plot=False
 ) -> pd.DataFrame:
     """
     Function to get count and proportions of samples
-    :param data:
-    :param cols:
-    :param plot:
+    :param data: default None, expects pandas dataframe
+    :param cols: default empty list, if empty defaults to all object columns
+    :param disp: default True, boolean indicator to display dataframe of results
+    :param plot: default False, boolean indicator to plot histograms
     :return:
     """
 
@@ -44,7 +45,8 @@ def get_sample_stats(
 
         cat_df = pd.concat([cat_df, grp])
 
-    display(cat_df)
+    if disp:
+        display(cat_df)
 
     if plot:
         pu.plot_category_histograms(data=data, cols=cols)
@@ -53,19 +55,27 @@ def get_sample_stats(
 
 
 def get_multi_group_stats(
-    data: pd.DataFrame = None, group_cols: list = None
+    data: pd.DataFrame = None, group_cols: list = None, disp=True
 ) -> pd.DataFrame:
+    """
+    Function to get proportion samples for multiple category cols
+    :param data: default None, expects pandas dataframe
+    :param group_cols: default None, Expects list of cols to group by
+    :param disp:
+    :return:
+    """
 
     if group_cols is None:
         logger.warning("No grouping cols passed in")
         return None
 
-    tmp = data.copy(deep=True)
+    tmp = data[group_cols].copy(deep=True)
     tmp["count"] = [i for i in range(len(data))]
 
     grp = tmp.groupby(group_cols, as_index=False)["count"].agg("count")
     grp["proportion_samples"] = round((grp["count"] / len(tmp)) * 100, 2)
 
-    display(grp)
+    if disp:
+        display(grp)
 
     return grp

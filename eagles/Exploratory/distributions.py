@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 def find_caps(
-    data: pd.DataFrame = None, cols: list = [], stats: list = [], plot=False
+    data: pd.DataFrame = None, cols: list = [], stats: list = [], disp=True, plot=False
 ) -> pd.DataFrame:
     """
     This function finds potential cap points for distributions and returns them by feature in a pandas dataframe
     :param data: pandas dataframe containing the data to be analyzed
     :param cols: list of column names to analyze
     :param stats: list of stats to find. Keys include 'sd' and/or 'percentile'
+    :param disp: default True, boolean indicator to display cap dataframe
     :param plot: boolean indicator whether to plot distribs or not
     :return: pandas dataframe with feature by potential cap points
     """
@@ -37,7 +38,7 @@ def find_caps(
     if len(stats) == 0:
         stats = ["sd"]
 
-    cap_dict = {"Feature": list()}
+    cap_dict = {"feature": list(), "mean": list()}
     if "percentile" in stats:
         cap_dict["75th_Percentile"] = list()
         cap_dict["90th_Percentile"] = list()
@@ -49,7 +50,8 @@ def find_caps(
         cap_dict["skew"] = list()
 
     for col in cols:
-        cap_dict["Feature"].append(col)
+        cap_dict["feature"].append(col)
+        cap_dict["mean"].append(data[col].mean())
         if "percentile" in stats:
             cap_dict["75th_Percentile"].append(data[col].quantile(0.75))
             cap_dict["90th_Percentile"].append(data[col].quantile(0.90))
@@ -74,7 +76,8 @@ def find_caps(
                 cap_dict["minus_3_SD"].append(data[col].mean() - (data[col].std() * 3))
 
     cap_df = pd.DataFrame(cap_dict)
-    display(cap_df)
+    if disp:
+        display(cap_df)
 
     if plot:
         pu.plot_distributions(data=data, cols=cols, caps=cap_dict)
