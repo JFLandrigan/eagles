@@ -209,6 +209,7 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
         ("RandomForest" in mod_type)
         or ("GradientBoosting" in mod_type)
         or ("DecisionTree" in mod_type)
+        or ("ExtraTrees" in mod_type)
     ):
         importance_values = mod.feature_importances_
 
