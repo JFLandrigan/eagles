@@ -136,7 +136,10 @@ def plot_outcome_boxes(data=None, outcome: list = [], fts: list = []) -> None:
             # Set up the matplotlib figure
             _ = plt.figure(figsize=(8, 8))
             ax = sns.boxplot(x="Feature", y="value", hue=out, data=df_long)
-            _ = ax.set_xticklabels((ax.get_xticklabels()), rotation=90)
+
+            if len(ft) > 1:
+                _ = ax.set_xticklabels((ax.get_xticklabels()), rotation=90)
+
             _ = ax.set_title(out)
 
     return None
