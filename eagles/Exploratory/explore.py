@@ -122,7 +122,7 @@ def run_battery(
             display(info_df)
             return_dict["info"] = info_df
         elif test == "missing":
-            msg_df = missing.get_proportion_missing(df=data, cols=cols, plot=plot)
+            msg_df = missing.get_proportion_missing(data=data, cols=cols, plot=plot)
             return_dict["missing"] = msg_df
         elif test == "descriptive":
             stat_df = get_base_descriptives(

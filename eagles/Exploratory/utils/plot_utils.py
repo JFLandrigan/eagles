@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import math
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -65,7 +67,7 @@ def plot_missing_values(df: pd.DataFrame = None, cols: list = []) -> None:
 def plot_category_histograms(data: pd.DataFrame = None, cols: list = []) -> None:
     """
     Function to plot the distributions and their potential caps
-    :param df: pandas dataframe with col to plotted
+    :param data: pandas dataframe with col to plotted
     :param cols: list of column names to plot
     :return:
     """
@@ -117,3 +119,35 @@ def plot_correlations(data=None, cols: list = [], plot_title="Feature Correlatio
     ax.set_title(plot_title)
 
     return
+
+
+def plot_outcome_boxes(data=None, outcome: list = [], fts: list = []) -> None:
+
+    if len(fts) > 10:
+        fts = np.array_split(fts, math.ceil(len(fts) / 10))
+    else:
+        fts = [fts]
+
+    for ft in fts:
+        for out in outcome:
+            tmp_fts = outcome + ft
+            df_long = pd.melt(data[tmp_fts], id_vars=out, var_name="Feature")
+
+            # Set up the matplotlib figure
+            _ = plt.figure(figsize=(8, 8))
+            ax = sns.boxplot(x="Feature", y="value", hue=out, data=df_long)
+            _ = ax.set_xticklabels((ax.get_xticklabels()), rotation=90)
+            _ = ax.set_title(out)
+
+    return None
+
+
+def plot_proportions_by_outcome(data=None, outcome: str = None, fts: list = []) -> None:
+
+    for ft in fts:
+        _ = plt.figure(figsize=(5, 5))
+        ax = sns.countplot(x=ft, hue=outcome, data=data)
+        _ = ax.set_title(ft)
+        plt.show()
+
+    return None
