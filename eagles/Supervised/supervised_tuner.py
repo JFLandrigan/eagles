@@ -97,6 +97,9 @@ def tune_test_model(
     mod_scv = mi.init_model(model=model, params=params)
 
     problem_type = mi.define_problem_type(mod_scv)
+    if problem_type is None:
+        logger.warning("Could not detect problem type exiting")
+        return
 
     if pipe and scale:
         logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
@@ -337,6 +340,9 @@ def model_eval(
 
     mod = mi.init_model(model=model, params=params)
     problem_type = mi.define_problem_type(mod=mod)
+    if problem_type is None:
+        logger.warning("Could not detect problem type exiting")
+        return
 
     if pipe:
         mod = mi.build_pipes(mod=mod, pipe=pipe)

@@ -12,6 +12,15 @@ clf_models = [
     "StackingClassifier",
 ]
 
+clf_metrics = [
+    "accuracy",
+    "f1",
+    "precision",
+    "recall",
+    "roc_auc",
+    "precision_recall_auc",
+]
+
 regress_models = [
     "RandomForestRegressor",
     "ExtraTreesRegressor",
@@ -26,3 +35,5 @@ regress_models = [
     "VotingRegressor",
     "StackingRegressor",
 ]
+
+regress_metrics = ["mse", "rmse", "mae", "mape", "r2"]

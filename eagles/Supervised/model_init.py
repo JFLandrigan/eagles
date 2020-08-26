@@ -18,12 +18,16 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
 
+import numpy as np
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def define_problem_type(mod=None):
+def define_problem_type(mod=None, y=None):
+
+    problem_type = None
 
     if type(mod).__name__ in config.clf_models:
         problem_type = "clf"
@@ -32,13 +36,20 @@ def define_problem_type(mod=None):
     elif type(mod).__name__ == "Pipeline":
         if type(mod.named_steps["clf"]).__name__ in config.clf_models:
             problem_type = "clf"
-        else:
+        elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
             problem_type = "regress"
-    else:
-        logger.warning(
-            "WARNING COULD NOT INFER PROBLEM TYPE. ENSURE MODEL IS SUPPORTED"
-        )
-        return
+        elif "Classifier" in type(mod).__name__:
+            problem_type = "clf"
+        elif "Regressor" in type(mod).__name__:
+            problem_type = "regress"
+    elif "Classifier" in type(mod).__name__:
+        problem_type = "clf"
+    elif "Regressor" in type(mod).__name__:
+        problem_type = "regress"
+
+    if problem_type is None:
+        if len(np.unique(y)) == 2:
+            problem_type = "clf"
 
     return problem_type
 
