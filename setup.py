@@ -13,7 +13,6 @@ setup(
         "ipython",
         "kneed",
         "matplotlib",
-        "nltk",
         "numpy",
         "pandas",
         "scikit-learn",

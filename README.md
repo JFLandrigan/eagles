@@ -13,6 +13,7 @@ The functions primarily act as utility wrappers.
 For examples of how to use the functions contained within the package see the following jupyter notebooks:
 - Supervised Tuning.ipynb
 - Unsupervised Tuning.ipynb
+- Exploratory.ipynb
 
 
 
@@ -22,6 +23,7 @@ For examples of how to use the functions contained within the package see the fo
 ```
 from eagles.Supervised import supervised_tuner as st
 from eagles.Unsupervised import unsupervised_tuner as ut
+from eagles.Exploratory import explore, missing, distributions, categories , outcomes
 ```
 
 
@@ -192,6 +194,20 @@ clf, params, clf_fts = st.tune_test_model(X=iris[fts]
 
 
 
+## Exploratory Module
+
+The Exploratory module contains functions and tools for performing exploratory data analysis on pandas data frames. Currently the module includes the following:
+
+- explore: Includes run_battery(), get_base_descriptives() and get_correlations()
+  - run_battery() options include info, missing, descriptive, distributions, correlations and category_stats
+- missing: Includes get_proportion_missing()
+- distributions: Includes find_caps()
+- categories: Includes get_sample_stats() and get_multi_group_stats()
+- outcomes: Includes stats_by_outcome()
+  - stats_by_outcome() analysis options include descriptives, proportions, regress. Note when the outcome type is continuous the descriptives option also includes a correlations analysis. 
+
+
+
 ## Notes
 
 Currently the functions primarily rely on the use of pandas data frames. Numpy matrices can be passed in
@@ -202,7 +218,6 @@ however this may result in unexpected behavior.
 ## Packages Required (see requirements.txt for versions)
 - kneed
 - matplotlib
-- nltk
 - numpy
 - pandas
 - scikit-learn
