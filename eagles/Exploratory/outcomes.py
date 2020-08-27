@@ -19,6 +19,7 @@ def _perform_regress(
     outcome_type: str = None,
     outcome: str = None,
     fts: list = None,
+    disp: bool = True,
 ) -> pd.DataFrame:
 
     # todo Should also add in regression plots to show the fits
@@ -40,7 +41,8 @@ def _perform_regress(
     res = pd.read_html(res.as_html(), header=0, index_col=0)[0].reset_index()
     res.rename(columns={"index": "feature"}, inplace=True)
 
-    display(res)
+    if disp:
+        display(res)
 
     return res
 
@@ -49,6 +51,7 @@ def _get_proportions_by_outcomes(
     data: pd.DataFrame = None,
     outcome: str = None,
     categorical_fts: list = [],
+    disp: bool = True,
     plot: bool = False,
 ) -> pd.DataFrame:
 
@@ -61,7 +64,8 @@ def _get_proportions_by_outcomes(
         grp_df.columns = ["feature", "count", "proportion_samples"]
         cat_df = pd.DataFrame([cat_df, grp_df])
 
-    display(cat_df)
+    if disp:
+        display(cat_df)
 
     if plot:
         pu.plot_proportions_by_outcome(data=data, outcome=outcome, fts=categorical_fts)
@@ -73,6 +77,7 @@ def _get_corr_to_outcome(
     data: pd.DataFrame = None,
     outcome: str = None,
     continuous_fts: list = [],
+    disp: bool = True,
     plot: bool = False,
 ) -> pd.DataFrame:
 
@@ -89,7 +94,8 @@ def _get_corr_to_outcome(
         }
     )
 
-    display(corr_df)
+    if disp:
+        display(corr_df)
 
     return corr_df
 
@@ -99,6 +105,7 @@ def _get_descriptives_by_outcome(
     outcome: list = [],
     continuous_fts: list = [],
     descriptive_stats: list = [],
+    disp: bool = True,
     plot: bool = False,
 ) -> pd.DataFrame:
 
@@ -114,7 +121,8 @@ def _get_descriptives_by_outcome(
     grp_df.reset_index(inplace=True)
     grp_df.columns = col_names
 
-    display(grp_df)
+    if disp:
+        display(grp_df)
 
     if plot:
         pu.plot_outcome_boxes(data=data, outcome=outcome, fts=continuous_fts)
@@ -131,6 +139,7 @@ def stats_by_outcome(
     analyses: list = [],
     descriptive_stats: list = [],
     scale: str = None,
+    disp: bool = True,
     # remove_outliers: bool = False,
     plot: bool = False,
 ) -> dict:
@@ -145,8 +154,9 @@ def stats_by_outcome(
     proportions (i.e. proportion comparisons for categorical features), regress (i.e. returns significant
     predictors of the outcomes by performing regression using the features as predictors)
     :param scale: string indicating whether or not to scale the data. Expects either "standard" or "minmax"
+    :param disp: default True, boolean indicator to display result dataframes
     :param plot: Boolean, default False. IF true plots are displayed
-    :return:
+    :return: dictionary containing analyse keyed and result dataframe value pairs
     """
     if outcome is None:
         logger.warning("No outcome passed in")
@@ -179,6 +189,7 @@ def stats_by_outcome(
                     outcome=[outcome],
                     continuous_fts=continuous_fts,
                     descriptive_stats=descriptive_stats,
+                    disp=disp,
                     plot=plot,
                 )
                 analyses_dict["descriptives"] = desc_df
@@ -187,6 +198,7 @@ def stats_by_outcome(
                     data=data,
                     outcome=outcome,
                     continuous_fts=continuous_fts,
+                    disp=disp,
                     plot=plot,
                 )
                 analyses_dict["correlations"] = corr_df
@@ -195,6 +207,7 @@ def stats_by_outcome(
                     outcome=categorical_fts,
                     continuous_fts=[outcome],
                     descriptive_stats=descriptive_stats,
+                    disp=disp,
                     plot=plot,
                 )
                 analyses_dict["desc_df"] = desc_df
@@ -202,13 +215,21 @@ def stats_by_outcome(
         # get the proportion labels for categorical features by outcome
         elif a == "proportions" and len(categorical_fts) > 0:
             prop_df = _get_proportions_by_outcomes(
-                data=data, outcome=outcome, categorical_fts=categorical_fts, plot=plot
+                data=data,
+                outcome=outcome,
+                categorical_fts=categorical_fts,
+                disp=disp,
+                plot=plot,
             )
             analyses_dict["proportions"] = prop_df
 
         elif a == "regress":
             sig_df = _perform_regress(
-                data=data, outcome=outcome, fts=fts, outcome_type=outcome_type
+                data=data,
+                outcome=outcome,
+                fts=fts,
+                outcome_type=outcome_type,
+                disp=disp,
             )
             analyses_dict["regress"] = sig_df
         else:
