@@ -1,5 +1,6 @@
 include eagles/data_sets/iris.csv
+include eagles/data_sets/wines.csv
 include README.md
 include requirements.txt
-include LICENSES/*
-include LICENSE
+include LICENSES/*.txt
+include LICENSE.txt
