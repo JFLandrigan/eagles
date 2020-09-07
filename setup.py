@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="eagles",
-    version="0.0.1",
+    version="0.1.0",
     description="Data science utility package to help practitioners in their dev work.",
     url="https://github.com/JFLandrigan/eagles",
     author="Jon-Frederick Landrigan",
