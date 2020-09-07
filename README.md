@@ -18,7 +18,11 @@ For examples of how to use the functions contained within the package see the fo
 
 
 ## Install
-**This package is still under heavy development and testing.** Currently the package is only available for installation via github. To install you can use ```pip3 install git+https://github.com/JFLandrigan/eagles.git#"egg=eagles" ```  .  Once installed it can be imported like any other python package. For example:
+To install you can use either 
+```pip3 install eagles ``` to install from pypi   or 
+```pip3 install git+https://github.com/JFLandrigan/eagles.git#"egg=eagles" ```  to install direct from the github repo in order to get the latest merges. Note when installing direct from github, while it may contain the latest updates, it may not be as stable as compared to releases installed from pypi. 
+
+Once installed it can be imported like any other python package. For example:
 
 ```
 from eagles.Supervised import supervised_tuner as st
