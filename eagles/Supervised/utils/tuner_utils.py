@@ -45,7 +45,7 @@ def select_features(
         return
 
     # get the initial features
-    ft_cols = X.columns[:]
+    ft_cols = list(X.columns[:])
     print("Init number of features: " + str(len(ft_cols)) + " \n")
 
     imp_drop = []
@@ -242,7 +242,7 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
     return
 
 
-def feature_importances(mod=None, X=None, num_top_fts=None):
+def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
 
     if type(mod).__name__ == "Pipeline":
 
@@ -258,12 +258,13 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
             mod=tmp_mod,
             features=tmp_fts,
         )
-        pu.plot_feature_importance(
-            ft_df=ft_imp_df,
-            mod_type=type(mod.named_steps["clf"]).__name__,
-            num_top_fts=num_top_fts,
-            plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
-        )
+        if disp:
+            pu.plot_feature_importance(
+                ft_df=ft_imp_df,
+                mod_type=type(mod.named_steps["clf"]).__name__,
+                num_top_fts=num_top_fts,
+                plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
+            )
 
     elif type(mod).__name__ == "VotingClassifier":
 
@@ -284,23 +285,25 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
                     mod=tmp_mod,
                     features=tmp_fts,
                 )
-                pu.plot_feature_importance(
-                    ft_df=tmp_ft_imp_df,
-                    mod_type=type(c.named_steps["clf"]).__name__,
-                    num_top_fts=num_top_fts,
-                    plot_title=type(c.named_steps["clf"]).__name__
-                    + " Model Importance",
-                )
+                if disp:
+                    pu.plot_feature_importance(
+                        ft_df=tmp_ft_imp_df,
+                        mod_type=type(c.named_steps["clf"]).__name__,
+                        num_top_fts=num_top_fts,
+                        plot_title=type(c.named_steps["clf"]).__name__
+                        + " Model Importance",
+                    )
             else:
                 tmp_ft_imp_df = get_feature_importances(
                     mod_type=type(c).__name__, mod=c, features=list(X.columns)
                 )
-                pu.plot_feature_importance(
-                    ft_df=tmp_ft_imp_df,
-                    mod_type=type(c).__name__,
-                    num_top_fts=num_top_fts,
-                    plot_title=type(c).__name__ + " Model Importance",
-                )
+                if disp:
+                    pu.plot_feature_importance(
+                        ft_df=tmp_ft_imp_df,
+                        mod_type=type(c).__name__,
+                        num_top_fts=num_top_fts,
+                        plot_title=type(c).__name__ + " Model Importance",
+                    )
 
             tmp_ft_imp_df.columns = ["features", "value"]
             tmp_ft_imp_df["features"] = (
@@ -313,11 +316,12 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
         ft_imp_df = get_feature_importances(
             mod_type=type(mod).__name__, mod=mod, features=list(X.columns)
         )
-        pu.plot_feature_importance(
-            ft_df=ft_imp_df,
-            mod_type=type(mod).__name__,
-            num_top_fts=num_top_fts,
-            plot_title=type(mod).__name__ + " Model Importance",
-        )
+        if disp:
+            pu.plot_feature_importance(
+                ft_df=ft_imp_df,
+                mod_type=type(mod).__name__,
+                num_top_fts=num_top_fts,
+                plot_title=type(mod).__name__ + " Model Importance",
+            )
 
     return ft_imp_df

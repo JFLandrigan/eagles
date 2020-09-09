@@ -39,6 +39,7 @@ def tune_test_model(
     n_jobs=1,
     random_seed=None,
     binary=True,
+    disp=True,
     log="log",
     log_name=None,
     log_path=None,
@@ -78,6 +79,7 @@ def tune_test_model(
     functions and classes. If not passed will use np.random to set this value
     :param binary: boolean default True, Flag to tell the functions whether or not is a binary classification problem.
     If it is a regression problem this argument is ignored.
+    :param disp: default True, boolean indicator to display graphs
     :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
     keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
     the logged out components.
@@ -228,6 +230,7 @@ def tune_test_model(
         get_ft_imp=get_ft_imp,
         random_seed=random_seed,
         binary=binary,
+        disp=disp,
         log=log,
         log_name=log_name,
         log_path=log_path,
@@ -304,6 +307,7 @@ def model_eval(
     get_ft_imp=False,
     random_seed=None,
     binary=True,
+    disp=True,
     log="log",
     log_name=None,
     log_path=None,
@@ -326,6 +330,7 @@ def model_eval(
     :param get_ft_imp: boolean indicating to get and plot the feature importances
     :param random_seed: int for random seed setting
     :param binary: boolean indicating if model predictions are binary or multi-class
+    :param disp: default True, boolean indicator to display graphs
     :param log: boolean indicator to log out results
     :param log_name: string name of the logger doc
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
@@ -416,23 +421,28 @@ def model_eval(
             y_test, preds, target_names=[str(x) for x in mod.classes_]
         )
 
-        pu.plot_confusion_matrix(cf=cf, labels=mod.classes_)
-        print(cr)
+        if disp:
+            pu.plot_confusion_matrix(cf=cf, labels=mod.classes_)
+            print(cr)
 
     if binary and problem_type == "clf":
         prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
         bt = tu.create_bin_table(
             df=prob_df, bins=bins, bin_col="probab", actual_col="actual"
         )
-        display(bt)
+        if disp:
+            display(bt)
 
-    if "roc_auc" in metrics:
-        pu.plot_roc_curve(y_true=y_test, pred_probs=pred_probs)
-    if "precision_recall_auc" in metrics:
-        pu.plot_precision_recall_curve(y_true=y_test, pred_probs=pred_probs)
+    if disp:
+        if "roc_auc" in metrics:
+            pu.plot_roc_curve(y_true=y_test, pred_probs=pred_probs)
+        if "precision_recall_auc" in metrics:
+            pu.plot_precision_recall_curve(y_true=y_test, pred_probs=pred_probs)
 
     if get_ft_imp:
-        ft_imp_df = tu.feature_importances(mod=mod, X=X, num_top_fts=num_top_fts)
+        ft_imp_df = tu.feature_importances(
+            mod=mod, X=X, num_top_fts=num_top_fts, disp=disp
+        )
 
     # create a copy of the final testing data and append the predictions, pred probs and true values
     fin_test_df = X_test.copy(deep=True)
