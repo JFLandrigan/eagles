@@ -69,7 +69,8 @@ def plot_confusion_matrix(cf=None, labels=None):
     cf_df = cf_df.div(cf_df.sum(axis=1), axis=0)
 
     plt.figure(figsize=(12, 12))
-    sns.heatmap(cf_df, annot=True, cmap="coolwarm")
+    # coolwarm
+    sns.heatmap(cf_df, annot=True, cmap="vlag", annot_kws={"fontsize": 18})
 
     return
 

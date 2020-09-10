@@ -216,7 +216,7 @@ def tune_test_model(
 
     print("Performing model eval on best estimator")
 
-    log_data = model_eval(
+    res_dict = model_eval(
         X=X,
         y=y,
         model=mod,
@@ -238,6 +238,7 @@ def tune_test_model(
     )
 
     if log:
+        log_data = res_dict["log_data"]
 
         log_data["test_params"] = test_params
         log_data["tune_metric"] = tune_metric
@@ -290,7 +291,11 @@ def tune_test_model(
         else:
             logger.warning("LOG TYPE NOT SUPPORTED: " + str(log))
 
-    return [mod, params, features]
+    res_dict["model"] = mod
+    res_dict["params"] = params
+    res_dict["features"] = features
+
+    return res_dict
 
 
 def model_eval(
@@ -507,14 +512,59 @@ def model_eval(
         if get_ft_imp:
             log_data["ft_imp_df"] = ft_imp_df
 
-        # if called from tune test then return the log data for final appending before logout
+        # if called from tune test then return res dict with everything except the model
         # else log out the data and then return the final dictionary
         if tune_test:
-            return log_data
+            res_dict = {
+                "fin_cv_df": fin_test_df,
+                "metrics": {
+                    k: metric_dictionary[k]
+                    for k in metric_dictionary.keys()
+                    if "_func" not in k
+                },
+                "log_data": log_data,
+            }
+            return res_dict
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-            return [mod, fin_test_df]
 
-    return [mod, fin_test_df]
+            res_dict = {
+                "model": mod,
+                "fin_cv_df": fin_test_df,
+                "metrics": {
+                    k: metric_dictionary[k]
+                    for k in metric_dictionary.keys()
+                    if "_func" not in k
+                },
+                "log_data": log_data,
+            }
+
+            return res_dict
+
+    else:
+        # If no log and tune test return everything except the model else return the model as well
+        if tune_test:
+            res_dict = {
+                "fin_cv_df": fin_test_df,
+                "metrics": {
+                    k: metric_dictionary[k]
+                    for k in metric_dictionary.keys()
+                    if "_func" not in k
+                },
+                "log_data": {},
+            }
+        else:
+            res_dict = {
+                "model": mod,
+                "fin_cv_df": fin_test_df,
+                "metrics": {
+                    k: metric_dictionary[k]
+                    for k in metric_dictionary.keys()
+                    if "_func" not in k
+                },
+                "log_data": {},
+            }
+
+        return res_dict
