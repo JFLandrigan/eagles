@@ -10,12 +10,13 @@ clf_models = [
     "AdaBoostClassifier",
     "VotingClassifier",
     "StackingClassifier",
+    "ClassifierChain",
+    "OneVsRestClassifier",
 ]
 
 clf_metrics = [
     "accuracy",
-    "f1",
-    "precision",
+    "f1" "precision",
     "recall",
     "roc_auc",
     "precision_recall_auc",

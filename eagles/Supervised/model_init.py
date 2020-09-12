@@ -9,6 +9,8 @@ from sklearn.ensemble import (
     GradientBoostingRegressor,
     AdaBoostRegressor,
 )
+from sklearn.multioutput import ClassifierChain
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso, ElasticNet
 from sklearn.svm import SVC, SVR
@@ -78,6 +80,12 @@ def init_model(model=None, params={}):
         mod = MLPClassifier(**params)
     elif model == "ada_clf":
         mod = AdaBoostClassifier(**params)
+    elif model == "clf_chain":
+        if "base_estimator" not in params.keys():
+            params["base_estimator"] = LogisticRegression(
+                random_state=params["random_state"]
+            )
+        mod = ClassifierChain(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
     elif model == "et_regress":
