@@ -51,7 +51,7 @@ def plot_feature_correlations(df=None, plot_title=""):
         vmax=corr.values.max(),
         center=0,
         square=True,
-        linewidths=0.5,
+        # linewidths=0.5,
         cbar_kws={"shrink": 0.5},
     )
 

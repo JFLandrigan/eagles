@@ -11,6 +11,8 @@ from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
     r2_score,
+    jaccard_score,
+    hamming_loss,
 )
 from math import sqrt
 
@@ -71,6 +73,14 @@ def init_model_metrics(metrics=[]):
         metric_dictionary["precision_recall_auc_func"] = precision_recall_auc
         metric_dictionary["precision_recall_auc_scores"] = np.array([])
 
+    if "hamming" in metrics:
+        metric_dictionary["hamming_func"] = hamming_loss
+        metric_dictionary["hamming_scores"] = np.array([])
+
+    if "jaccard" in metrics:
+        metric_dictionary["jaccard_func"] = jaccard_score
+        metric_dictionary["jaccard_scores"] = np.array([])
+
     # Regression Metrics
     if "mse" in metrics:
         metric_dictionary["mse_func"] = mean_squared_error
@@ -94,6 +104,7 @@ def init_model_metrics(metrics=[]):
 
     return metric_dictionary
 
+
 def calc_metrics(
     metrics=None,
     metric_dictionary=None,
@@ -109,12 +120,13 @@ def calc_metrics(
             "recall",
             "roc_auc",
             "precision_recall_auc",
+            "jaccard",
         ]:
             metric_dictionary[metric + "_scores"] = np.append(
                 metric_dictionary[metric + "_scores"],
                 metric_dictionary[metric + "_func"](y_test, preds),
             )
-        elif metric in ["f1", "precision", "recall"]:
+        elif metric in ["f1", "precision", "recall", "jaccard"]:
             metric_dictionary[metric + "_scores"] = np.append(
                 metric_dictionary[metric + "_scores"],
                 metric_dictionary[metric + "_func"](y_test, preds, average=avg),

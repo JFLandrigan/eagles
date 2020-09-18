@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
+from scipy import stats
 
 
 def feature_comps(data=None, outcome=None, problem_type="clf"):
@@ -58,18 +59,19 @@ def select_features(
         # correlation drop
         corr_fts = [x for x in X.columns if x not in bin_fts]
         correlations = X[corr_fts].corr()
-        upper = correlations.where(
-            np.triu(np.ones(correlations.shape), k=1).astype(np.bool)
-        )
-        corr_drop = [
-            column for column in upper.columns if any(upper[column].abs() > corr_thresh)
-        ]
 
         if plot_ft_corr:
             pu.plot_feature_correlations(
                 df=X[corr_fts].copy(deep=True),
                 plot_title="Feature Correlation Pre-Drop",
             )
+
+        upper = correlations.where(
+            np.triu(np.ones(correlations.shape), k=1).astype(np.bool)
+        )
+        corr_drop = [
+            column for column in upper.columns if any(upper[column].abs() > corr_thresh)
+        ]
 
         # drop the correlation features first then fit the models
         print("Features dropping due to high correlation: " + str(corr_drop) + " \n")
@@ -200,7 +202,15 @@ def create_bin_table(df=None, bins=None, bin_col=None, actual_col=None):
     )
     wrt_table.sort_values(by=bin_col_name, inplace=True)
 
-    return wrt_table
+    # calc the correlation between probab bin rank and the percent actual
+    # asssumes table in order at this point
+    if wrt_table.isnull().values.any():
+        return wrt_table, np.nan
+    else:
+        ranks = [i for i in range(wrt_table.shape[0])]
+        corr, p = stats.pearsonr(ranks, wrt_table["percent_actual"])
+
+        return [wrt_table, corr]
 
 
 def get_feature_importances(mod_type=None, mod=None, features=None):

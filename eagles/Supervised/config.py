@@ -35,6 +35,8 @@ clf_metrics = [
     "recall",
     "roc_auc",
     "precision_recall_auc",
+    "hamming",
+    "jaccard",
 ]
 
 regress_model_abbreviations = [

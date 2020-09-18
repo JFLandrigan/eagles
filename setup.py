@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="eagles",
-    version="0.1.0",
+    version="0.1.1",
     description="Data science utility package to help practitioners do ML and EDA work.",
     long_description=long_description,
     long_description_content_type="text/markdown",

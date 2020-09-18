@@ -19,6 +19,7 @@ from sklearn.svm import SVC, SVR
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
+from sklearn.feature_selection import SelectFromModel
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
 
@@ -58,11 +59,14 @@ def define_problem_type(mod=None, y=None):
     return problem_type
 
 
-def init_model(model=None, params={}):
+def init_model(model=None, params={}, random_seed=None):
 
     if model is None:
         logger.warning("NO MODEL PASSED IN")
         return
+
+    if model not in ["linear", "svr"] and "random_state" not in params.keys():
+        params = {"random_state": random_seed}
 
     if model == "rf_clf":
         mod = RandomForestClassifier(**params)

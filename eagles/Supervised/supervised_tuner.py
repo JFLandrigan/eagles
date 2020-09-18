@@ -24,7 +24,7 @@ def tune_test_model(
     X=None,
     y=None,
     model=None,
-    params=None,
+    params={},
     tune_metric=None,
     eval_metrics=[],
     num_cv=5,
@@ -94,9 +94,7 @@ def tune_test_model(
         print("Random Seed Value: " + str(random_seed))
 
     # init the model and define the problem type (linear and svr don't take random_state args)
-    if model not in ["linear", "svr"] and not params:
-        params = {"random_state": random_seed}
-    mod_scv = mi.init_model(model=model, params=params)
+    mod_scv = mi.init_model(model=model, params=params, random_seed=random_seed)
 
     problem_type = mi.define_problem_type(mod_scv)
     if problem_type is None:
@@ -112,6 +110,7 @@ def tune_test_model(
     elif scale:
         mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
 
+    # TODO add in logic that if want sklearn select from model then build into a pipe
     if select_features:
         print("Selecting features")
 
@@ -190,6 +189,7 @@ def tune_test_model(
 
     scv.fit(X, y)
 
+    # make copy of params passed in for tuning and testing so that only best model params go through to model eval
     test_params = params.copy()
 
     mod = scv.best_estimator_
@@ -220,7 +220,7 @@ def tune_test_model(
         X=X,
         y=y,
         model=mod,
-        params={},
+        params=params,
         metrics=eval_metrics,
         bins=bins,
         pipe=None,
@@ -348,7 +348,7 @@ def model_eval(
         random_seed = np.random.randint(1000, size=1)[0]
     print("Random Seed Value: " + str(random_seed))
 
-    mod = mi.init_model(model=model, params=params)
+    mod = mi.init_model(model=model, params=params, random_seed=random_seed)
     problem_type = mi.define_problem_type(mod=mod)
     if problem_type is None:
         logger.warning("Could not detect problem type exiting")
@@ -405,11 +405,15 @@ def model_eval(
     print("\nCV Run Scores")
     for metric in metrics:
         print(metric + " scores: " + str(metric_dictionary[metric + "_scores"]))
-        print(metric + " mean: " + str(metric_dictionary[metric + "_scores"].mean()))
+        print(
+            metric
+            + " mean: "
+            + str(round(metric_dictionary[metric + "_scores"].mean(), 4))
+        )
         print(
             metric
             + " standard deviation: "
-            + str(metric_dictionary[metric + "_scores"].std())
+            + str(round(metric_dictionary[metric + "_scores"].std(), 4))
             + " \n"
         )
 
@@ -417,26 +421,37 @@ def model_eval(
 
     print("Final cv train test split")
     for metric in metrics:
-        print(metric + " score: " + str(metric_dictionary[metric + "_scores"][-1]))
+        print(
+            metric
+            + " score: "
+            + str(round(metric_dictionary[metric + "_scores"][-1], 4))
+        )
 
     if problem_type == "clf":
         print(" \n")
-        cf = confusion_matrix(y_test, preds)
+        cf = None
+        if y_test.shape[1] == 1:
+            cf = confusion_matrix(y_test, preds)
         cr = classification_report(
             y_test, preds, target_names=[str(x) for x in mod.classes_]
         )
 
-        if disp:
+        if disp and cf:
             pu.plot_confusion_matrix(cf=cf, labels=mod.classes_)
             print(cr)
 
     if binary and problem_type == "clf":
         prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
-        bt = tu.create_bin_table(
+        bt, corr = tu.create_bin_table(
             df=prob_df, bins=bins, bin_col="probab", actual_col="actual"
         )
         if disp:
             display(bt)
+            if pd.notnull(corr):
+                print(
+                    "Correlation between probability bin order and percent actual: "
+                    + str(round(corr, 3))
+                )
 
     if disp:
         if "roc_auc" in metrics:
@@ -451,9 +466,17 @@ def model_eval(
 
     # create a copy of the final testing data and append the predictions, pred probs and true values
     fin_test_df = X_test.copy(deep=True)
-    fin_test_df["true_labels"] = y_test
-    fin_test_df["preds"] = preds
-    fin_test_df["pred_probs"] = pred_probs
+    if y_test.shape[1] == 1:
+        fin_test_df["true_labels"] = y_test
+        fin_test_df["preds"] = preds
+        fin_test_df["pred_probs"] = pred_probs
+    else:
+        # can't do pred probs because only returns the probs for last set of predictions
+        y_test.columns = [str(col) + "_true_label" for col in y.columns]
+        fin_test_df = fin_test_df.join(y_test)
+        fin_test_df = fin_test_df.join(
+            pd.DataFrame(preds, columns=[str(col) + "_pred" for col in y.columns])
+        )
 
     if log:
         log_data = {
