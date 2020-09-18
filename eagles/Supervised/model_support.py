@@ -1,23 +1,33 @@
 from eagles.Supervised import config
+import pandas as pd
+from IPython.display import display
 
 
 def print_classifiers() -> None:
-    for i in range(len(config.clf_model_abbreviations)):
-        print(
-            "Abbreviattion: "
-            + config.clf_model_abbreviations[i]
-            + ", Model: "
-            + config.clf_models[i]
-        )
+
+    print("Supoorted Classification Models")
+    mods = pd.DataFrame(
+        {"Abbreviation": config.clf_model_abbreviations, "Model": config.clf_models}
+    )
+    display(mods)
+
+    print("\nClassification Metrics:")
+    print(config.clf_metrics)
+
     return
 
 
 def print_regressors() -> None:
-    for i in range(len(config.regress_model_abbreviations)):
-        print(
-            "Abbreviattion: "
-            + config.regress_model_abbreviations[i]
-            + ", Model: "
-            + config.regress_models[i]
-        )
+    print("Supoorted Regression Models")
+    mods = pd.DataFrame(
+        {
+            "Abbreviation": config.regress_model_abbreviations,
+            "Model": config.regress_models,
+        }
+    )
+    display(mods)
+
+    print("\nRegressor Metrics:")
+    print(config.regress_metrics)
+
     return
