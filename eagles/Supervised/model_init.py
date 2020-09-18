@@ -8,6 +8,8 @@ from sklearn.ensemble import (
     ExtraTreesRegressor,
     GradientBoostingRegressor,
     AdaBoostRegressor,
+    VotingClassifier,
+    VotingRegressor,
 )
 from sklearn.multioutput import ClassifierChain
 from sklearn.multiclass import OneVsRestClassifier
@@ -80,12 +82,25 @@ def init_model(model=None, params={}):
         mod = MLPClassifier(**params)
     elif model == "ada_clf":
         mod = AdaBoostClassifier(**params)
+    elif model == "vc_clf":
+        if "estimators" not in params.keys():
+            params["estimators"] = [
+                ("rf", RandomForestClassifier(random_state=params["random_state"])),
+                ("lr", LogisticRegression(random_state=params["random_state"])),
+            ]
+        mod = VotingClassifier(**params)
     elif model == "clf_chain":
         if "base_estimator" not in params.keys():
             params["base_estimator"] = LogisticRegression(
                 random_state=params["random_state"]
             )
         mod = ClassifierChain(**params)
+    elif model == "ovr_clf":
+        if "estimator" not in params.keys():
+            params["estimator"] = LogisticRegression(
+                random_state=params["random_state"]
+            )
+        mod = OneVsRestClassifier(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
     elif model == "et_regress":
@@ -106,6 +121,13 @@ def init_model(model=None, params={}):
         mod = KNeighborsRegressor(**params)
     elif model == "ada_regress":
         mod = AdaBoostRegressor(**params)
+    elif model == "vc_regress":
+        if "estimators" not in params.keys():
+            params["estimators"] = [
+                ("rf", RandomForestRegressor(random_state=params["random_state"])),
+                ("linear", LinearRegression()),
+            ]
+        mod = VotingRegressor(**params)
     else:
         mod = model
 
