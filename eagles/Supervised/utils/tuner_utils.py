@@ -211,6 +211,8 @@ def create_bin_table(df=None, bins=None, bin_col=None, actual_col=None):
 
 def get_feature_importances(mod_type=None, mod=None, features=None):
 
+    features = ["ft_" + str(ft) if isinstance(ft, int) else ft for ft in features]
+
     if (
         ("RandomForest" in mod_type)
         or ("GradientBoosting" in mod_type)
