@@ -61,12 +61,20 @@ def plot_feature_correlations(df=None, plot_title=""):
 
 
 def plot_confusion_matrix(cf=None, labels=None):
+    annotate = True
+    size = 18
+
+    if len(labels) > 15:
+        annotate = False
+
+    if len(labels) > 8:
+        size = 12
 
     cf_df = pd.DataFrame(cf, index=labels, columns=labels)
     cf_df = cf_df.div(cf_df.sum(axis=1), axis=0)
 
     plt.figure(figsize=(12, 12))
-    sns.heatmap(cf_df, annot=True, cmap="vlag", annot_kws={"fontsize": 18})
+    sns.heatmap(cf_df, annot=annotate, cmap="vlag", annot_kws={"fontsize": size})
 
     return
 

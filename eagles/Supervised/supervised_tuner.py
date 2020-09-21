@@ -93,6 +93,12 @@ def tune_test_model(
         random_seed = np.random.randint(1000, size=1)[0]
         print("Random Seed Value: " + str(random_seed))
 
+    # Check to see if pandas dataframe if not then convert to one
+    if not isinstance(X, pd.DataFrame):
+        X = pd.DataFrame(X)
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
+
     # init the model and define the problem type (linear and svr don't take random_state args)
     mod_scv = mi.init_model(model=model, params=params, random_seed=random_seed)
 
@@ -346,6 +352,12 @@ def model_eval(
     if random_seed is None:
         random_seed = np.random.randint(1000, size=1)[0]
     print("Random Seed Value: " + str(random_seed))
+
+    # Check to see if pandas dataframe if not then convert to one
+    if not isinstance(X, pd.DataFrame):
+        X = pd.DataFrame(X)
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
 
     mod = mi.init_model(model=model, params=params, random_seed=random_seed)
     problem_type = mi.define_problem_type(mod=mod)
