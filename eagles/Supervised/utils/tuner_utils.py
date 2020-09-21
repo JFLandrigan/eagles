@@ -9,10 +9,6 @@ from sklearn.model_selection import train_test_split
 from scipy import stats
 
 
-def feature_comps(data=None, outcome=None, problem_type="clf"):
-    return
-
-
 def select_features(
     X=None,
     y=None,

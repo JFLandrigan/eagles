@@ -11,15 +11,12 @@ from sklearn.ensemble import (
     VotingClassifier,
     VotingRegressor,
 )
-from sklearn.multioutput import ClassifierChain
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso, ElasticNet
 from sklearn.svm import SVC, SVR
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
-from sklearn.feature_selection import SelectFromModel
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
 
@@ -93,18 +90,6 @@ def init_model(model=None, params={}, random_seed=None):
                 ("lr", LogisticRegression(random_state=params["random_state"])),
             ]
         mod = VotingClassifier(**params)
-    elif model == "clf_chain":
-        if "base_estimator" not in params.keys():
-            params["base_estimator"] = LogisticRegression(
-                random_state=params["random_state"]
-            )
-        mod = ClassifierChain(**params)
-    elif model == "ovr_clf":
-        if "estimator" not in params.keys():
-            params["estimator"] = LogisticRegression(
-                random_state=params["random_state"]
-            )
-        mod = OneVsRestClassifier(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
     elif model == "et_regress":

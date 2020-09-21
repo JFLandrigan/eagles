@@ -110,7 +110,6 @@ def tune_test_model(
     elif scale:
         mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
 
-    # TODO add in logic that if want sklearn select from model then build into a pipe
     if select_features:
         print("Selecting features")
 
@@ -429,14 +428,12 @@ def model_eval(
 
     if problem_type == "clf":
         print(" \n")
-        cf = None
-        if y_test.shape[1] == 1:
-            cf = confusion_matrix(y_test, preds)
+        cf = confusion_matrix(y_test, preds)
         cr = classification_report(
             y_test, preds, target_names=[str(x) for x in mod.classes_]
         )
 
-        if disp and cf:
+        if disp:
             pu.plot_confusion_matrix(cf=cf, labels=mod.classes_)
             print(cr)
 
@@ -466,17 +463,9 @@ def model_eval(
 
     # create a copy of the final testing data and append the predictions, pred probs and true values
     fin_test_df = X_test.copy(deep=True)
-    if y_test.shape[1] == 1:
-        fin_test_df["true_labels"] = y_test
-        fin_test_df["preds"] = preds
-        fin_test_df["pred_probs"] = pred_probs
-    else:
-        # can't do pred probs because only returns the probs for last set of predictions
-        y_test.columns = [str(col) + "_true_label" for col in y.columns]
-        fin_test_df = fin_test_df.join(y_test)
-        fin_test_df = fin_test_df.join(
-            pd.DataFrame(preds, columns=[str(col) + "_pred" for col in y.columns])
-        )
+    fin_test_df["true_labels"] = y_test
+    fin_test_df["preds"] = preds
+    fin_test_df["pred_probs"] = pred_probs
 
     if log:
         log_data = {
@@ -537,57 +526,37 @@ def model_eval(
 
         # if called from tune test then return res dict with everything except the model
         # else log out the data and then return the final dictionary
+        res_dict = {
+            "fin_cv_df": fin_test_df,
+            "metrics": {
+                k: metric_dictionary[k]
+                for k in metric_dictionary.keys()
+                if "_func" not in k
+            },
+            "log_data": log_data,
+        }
         if tune_test:
-            res_dict = {
-                "fin_cv_df": fin_test_df,
-                "metrics": {
-                    k: metric_dictionary[k]
-                    for k in metric_dictionary.keys()
-                    if "_func" not in k
-                },
-                "log_data": log_data,
-            }
             return res_dict
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-
-            res_dict = {
-                "model": mod,
-                "fin_cv_df": fin_test_df,
-                "metrics": {
-                    k: metric_dictionary[k]
-                    for k in metric_dictionary.keys()
-                    if "_func" not in k
-                },
-                "log_data": log_data,
-            }
-
+            res_dict["model"] = mod
             return res_dict
 
     else:
         # If no log and tune test return everything except the model else return the model as well
+        res_dict = {
+            "fin_cv_df": fin_test_df,
+            "metrics": {
+                k: metric_dictionary[k]
+                for k in metric_dictionary.keys()
+                if "_func" not in k
+            },
+            "log_data": {},
+        }
         if tune_test:
-            res_dict = {
-                "fin_cv_df": fin_test_df,
-                "metrics": {
-                    k: metric_dictionary[k]
-                    for k in metric_dictionary.keys()
-                    if "_func" not in k
-                },
-                "log_data": {},
-            }
+            return res_dict
         else:
-            res_dict = {
-                "model": mod,
-                "fin_cv_df": fin_test_df,
-                "metrics": {
-                    k: metric_dictionary[k]
-                    for k in metric_dictionary.keys()
-                    if "_func" not in k
-                },
-                "log_data": {},
-            }
-
-        return res_dict
+            res_dict["model"] = mod
+            return res_dict

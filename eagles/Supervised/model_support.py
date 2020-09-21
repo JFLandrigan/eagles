@@ -11,8 +11,6 @@ def print_classifiers() -> None:
     )
     display(mods)
     print("Voting Classifier Defaults: Random Forest Classifier x Logistic Regression")
-    print("Classifier Chain default base estimator: Logistic Regression")
-    print("One Vs Rest Classifier default base estimator: Logistic Regression")
 
     print("\nClassification Metrics:")
     print(config.clf_metrics)

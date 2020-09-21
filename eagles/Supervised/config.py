@@ -9,8 +9,6 @@ clf_model_abbreviations = [
     "nn",
     "ada_clf",
     "vc_clf",
-    "clf_chain",
-    "ovr_clf",
 ]
 
 clf_models = [
@@ -24,8 +22,6 @@ clf_models = [
     "MLPClassifier",
     "AdaBoostClassifier",
     "VotingClassifier",
-    "ClassifierChain",
-    "OneVsRestClassifier",
 ]
 
 clf_metrics = [
@@ -35,8 +31,6 @@ clf_metrics = [
     "recall",
     "roc_auc",
     "precision_recall_auc",
-    "hamming",
-    "jaccard",
 ]
 
 regress_model_abbreviations = [
