@@ -87,7 +87,7 @@ def tune_test_model(
     :param log_name: str default None, prefix name of logged out data. Ignored if log is None
     :param log_path: str default None, path to save log data to. Ignored if no log is None
     :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
-    :return: dictionary containing final model fit, final cv data with predictions ,parameters, features, log data
+    :return: dictionary containing final model fit, metrics, final cv data with predictions ,parameters, features, log data
     """
 
     if random_seed is None:
@@ -359,7 +359,7 @@ def model_eval(
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
     :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
-    :return: dictionary containing final model fit, final cv data with predictions ,parameters, features, log data
+    :return: dictionary containing final model fit, metrics, final cv data with predictions ,parameters, features, log data
     """
 
     if random_seed is None:
