@@ -11,9 +11,9 @@ including supervised and unsupervised machine learning, data exploration and sta
 The functions primarily act as utility wrappers.
 
 For examples of how to use the functions contained within the package see the following jupyter notebooks:
-- Supervised Tuning.ipynb
-- Unsupervised Tuning.ipynb
-- Exploratory.ipynb
+- Supervised Tuning: https://github.com/JFLandrigan/eagles/blob/master/Supervised%20Tuning.ipynb
+- Unsupervised Tuning: https://github.com/JFLandrigan/eagles/blob/master/Unsupervised%20Tuning.ipynb
+- Exploratory: https://github.com/JFLandrigan/eagles/blob/master/Exploratory.ipynb
 
 
 
@@ -49,7 +49,14 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "nn" : MLPClassifier                  | "svr" : SVR                              |
 | "ada_clf" : AdaBoostClassifier        | "knn_regress" : KNeighborsRegressor      |
 | "et_clf": ExtraTreesClassifier        | "ada_regress" : AdaBoostRegressor        |
-|                                       | "et_regress": ExtraTreesRegressor        |
+| "vc_clf"  :VotingClassifier           | "et_regress": ExtraTreesRegressor        |
+|                                       | "vc_regress" : VotingRegressor           |
+
+Defaults:
+
+VotingClassifier: Estimators - RandomForestClassifier and LogisticRegression, Voting - Hard, Weights - Uniform
+
+VotingRegressor: Estimators - RandomForestRegressor and LinearRegression, Weights - Uniform
 
 ### Unsupervised
 
@@ -149,7 +156,7 @@ The supervised_tuner ```model_eval()``` allows the used to log out a text file o
 
 ```
 # Model evaluation
-st.model_eval(
+res = st.model_eval(
     X=iris[fts],
     y=iris['dummy'],
     model='logistic',
@@ -163,6 +170,7 @@ st.model_eval(
     get_ft_imp=True,
     random_seed=4,
     binary=True,
+    disp=True,
     log="log",
     log_name="model_eval_test.txt",
     log_path=None,
@@ -170,28 +178,30 @@ st.model_eval(
 )
 
 # Tuning and testing a model (Note if only a log is wanted the argument can be set to 'log')
-clf, params, clf_fts = st.tune_test_model(X=iris[fts]
-                                            ,y=iris['dummy']
-                                            ,model=vc_clf
-                                            ,params=pars
-                                            ,tune_metric="f1"
-                                            ,eval_metrics=["accuracy", "f1", "precision"]
-                                            ,num_cv=5
-                                            ,pipe=None
-                                            ,scale=None
-                                            ,select_features=select_features_dict
-                                            ,bins=None
-                                            ,num_top_fts=None
-                                            ,tuner="random_cv"
-                                            ,n_iterations=15
-                                            ,get_ft_imp=True
-                                            ,n_jobs=2
-                                            ,random_seed=None
-                                            ,binary=True
-                                            ,log=["log","mod","data"]
-                                            ,log_name="model_tunetest_test.txt"
-                                            ,log_path=None
-                                            ,log_note=note)
+res = st.tune_test_model(X=iris[fts],
+                        y=iris['dummy'],
+                        model='logistic',
+                        params=pars,
+                        tune_metric="f1",
+                        eval_metrics=["accuracy", "f1", "precision_recall_auc"],
+                        num_cv=5,
+                        pipe=None,
+                        scale=None,
+                        select_features=None,
+                        bins=None,
+                        num_top_fts=None,
+                        tuner="grid_cv",
+                        n_iterations=15,
+                        get_ft_imp=True,
+                        n_jobs=2,
+                        random_seed=None,
+                        binary=True,
+                        disp=True,
+                        log="log",
+                        log_name="model_tunetest_test.txt",
+                        log_path=None,
+                        log_note="This is a test of the tune test function"
+                    )
 ```
 
 **Note that if no log path is passed in a data subdirectory will be created in eagles/eagles/Supervised/utils/**

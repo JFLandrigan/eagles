@@ -7,6 +7,7 @@ from eagles.Supervised.utils import metric_utils as mu
 import time
 import pandas as pd
 import numpy as np
+import scipy
 from IPython.display import display
 
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -86,7 +87,7 @@ def tune_test_model(
     :param log_name: str default None, prefix name of logged out data. Ignored if log is None
     :param log_path: str default None, path to save log data to. Ignored if no log is None
     :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
-    :return:
+    :return: dictionary containing final model fit, final cv data with predictions ,parameters, features, log data
     """
 
     if random_seed is None:
@@ -95,6 +96,8 @@ def tune_test_model(
 
     # Check to see if pandas dataframe if not then convert to one
     if not isinstance(X, pd.DataFrame):
+        if isinstance(X, scipy.sparse.csr.csr_matrix):
+            X = X.todense()
         X = pd.DataFrame(X)
     if not isinstance(y, pd.Series):
         y = pd.Series(y)
@@ -346,7 +349,7 @@ def model_eval(
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
     :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
-    :return: model fitted on last cross validation set and last set of cv data for predictions
+    :return: dictionary containing final model fit, final cv data with predictions ,parameters, features, log data
     """
 
     if random_seed is None:
@@ -355,6 +358,8 @@ def model_eval(
 
     # Check to see if pandas dataframe if not then convert to one
     if not isinstance(X, pd.DataFrame):
+        if isinstance(X, scipy.sparse.csr.csr_matrix):
+            X = X.todense()
         X = pd.DataFrame(X)
     if not isinstance(y, pd.Series):
         y = pd.Series(y)
@@ -410,7 +415,12 @@ def model_eval(
             avg=avg,
         )
 
-        print("Finished cv run: " + str(cnt) + " time: " + str(time.time() - cv_st))
+        print(
+            "Finished cv run: "
+            + str(cnt)
+            + " time: "
+            + str(round(time.time() - cv_st, 4))
+        )
         cnt += 1
 
     print("\nCV Run Scores")
