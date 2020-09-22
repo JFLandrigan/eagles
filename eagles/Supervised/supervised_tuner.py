@@ -165,6 +165,7 @@ def tune_test_model(
             n_iter=n_iterations,
             scoring=tune_metric,
             cv=num_cv,
+            refit=True,
             n_jobs=n_jobs,
             verbose=2,
             random_state=random_seed,
@@ -187,6 +188,7 @@ def tune_test_model(
             param_grid=params,
             scoring=tune_metric,
             cv=num_cv,
+            refit=True,
             n_jobs=n_jobs,
             verbose=1,
         )
@@ -196,6 +198,14 @@ def tune_test_model(
         return
 
     scv.fit(X, y)
+
+    print(
+        "Mean cross val "
+        + tune_metric
+        + " score of best estimator during parameter tuning: "
+        + str(scv.best_score_)
+        + "\n"
+    )
 
     # make copy of params passed in for tuning and testing so that only best model params go through to model eval
     test_params = params.copy()
@@ -437,8 +447,6 @@ def model_eval(
             + str(round(metric_dictionary[metric + "_scores"].std(), 4))
             + " \n"
         )
-
-    print(" \n")
 
     print("Final cv train test split")
     for metric in metrics:
