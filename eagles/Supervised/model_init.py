@@ -8,6 +8,8 @@ from sklearn.ensemble import (
     ExtraTreesRegressor,
     GradientBoostingRegressor,
     AdaBoostRegressor,
+    VotingClassifier,
+    VotingRegressor,
 )
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso, ElasticNet
@@ -54,11 +56,14 @@ def define_problem_type(mod=None, y=None):
     return problem_type
 
 
-def init_model(model=None, params={}):
+def init_model(model=None, params={}, random_seed=None):
 
     if model is None:
         logger.warning("NO MODEL PASSED IN")
         return
+
+    if model not in ["linear", "svr"] and "random_state" not in params.keys():
+        params = {"random_state": random_seed}
 
     if model == "rf_clf":
         mod = RandomForestClassifier(**params)
@@ -78,6 +83,13 @@ def init_model(model=None, params={}):
         mod = MLPClassifier(**params)
     elif model == "ada_clf":
         mod = AdaBoostClassifier(**params)
+    elif model == "vc_clf":
+        if "estimators" not in params.keys():
+            params["estimators"] = [
+                ("rf", RandomForestClassifier(random_state=params["random_state"])),
+                ("lr", LogisticRegression(random_state=params["random_state"])),
+            ]
+        mod = VotingClassifier(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
     elif model == "et_regress":
@@ -98,6 +110,13 @@ def init_model(model=None, params={}):
         mod = KNeighborsRegressor(**params)
     elif model == "ada_regress":
         mod = AdaBoostRegressor(**params)
+    elif model == "vc_regress":
+        if "estimators" not in params.keys():
+            params["estimators"] = [
+                ("rf", RandomForestRegressor(random_state=params["random_state"])),
+                ("linear", LinearRegression()),
+            ]
+        mod = VotingRegressor(**params)
     else:
         mod = model
 

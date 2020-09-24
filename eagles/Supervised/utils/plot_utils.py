@@ -42,19 +42,16 @@ def plot_feature_correlations(df=None, plot_title=""):
     # Set up the matplotlib figure
     f, ax = plt.subplots(figsize=(11, 9))
 
-    # Generate a custom diverging colormap
-    cmap = sns.diverging_palette(240, 10, as_cmap=True)
-
     # Draw the heatmap with the mask and correct aspect ratio
     ax = sns.heatmap(
         corr,
         # mask=mask,
-        cmap=cmap,
+        cmap="vlag",
         vmin=corr.values.min(),
         vmax=corr.values.max(),
         center=0,
         square=True,
-        linewidths=0.5,
+        # linewidths=0.5,
         cbar_kws={"shrink": 0.5},
     )
 
@@ -64,12 +61,20 @@ def plot_feature_correlations(df=None, plot_title=""):
 
 
 def plot_confusion_matrix(cf=None, labels=None):
+    annotate = True
+    size = 18
+
+    if len(labels) > 15:
+        annotate = False
+
+    if len(labels) > 8:
+        size = 12
 
     cf_df = pd.DataFrame(cf, index=labels, columns=labels)
     cf_df = cf_df.div(cf_df.sum(axis=1), axis=0)
 
     plt.figure(figsize=(12, 12))
-    sns.heatmap(cf_df, annot=True, cmap="coolwarm")
+    sns.heatmap(cf_df, annot=annotate, cmap="vlag", annot_kws={"fontsize": size})
 
     return
 

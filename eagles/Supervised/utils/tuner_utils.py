@@ -6,10 +6,7 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
-
-
-def feature_comps(data=None, outcome=None, problem_type="clf"):
-    return
+from scipy import stats
 
 
 def select_features(
@@ -45,7 +42,7 @@ def select_features(
         return
 
     # get the initial features
-    ft_cols = X.columns[:]
+    ft_cols = list(X.columns[:])
     print("Init number of features: " + str(len(ft_cols)) + " \n")
 
     imp_drop = []
@@ -58,18 +55,19 @@ def select_features(
         # correlation drop
         corr_fts = [x for x in X.columns if x not in bin_fts]
         correlations = X[corr_fts].corr()
-        upper = correlations.where(
-            np.triu(np.ones(correlations.shape), k=1).astype(np.bool)
-        )
-        corr_drop = [
-            column for column in upper.columns if any(upper[column].abs() > corr_thresh)
-        ]
 
         if plot_ft_corr:
             pu.plot_feature_correlations(
                 df=X[corr_fts].copy(deep=True),
                 plot_title="Feature Correlation Pre-Drop",
             )
+
+        upper = correlations.where(
+            np.triu(np.ones(correlations.shape), k=1).astype(np.bool)
+        )
+        corr_drop = [
+            column for column in upper.columns if any(upper[column].abs() > corr_thresh)
+        ]
 
         # drop the correlation features first then fit the models
         print("Features dropping due to high correlation: " + str(corr_drop) + " \n")
@@ -200,10 +198,20 @@ def create_bin_table(df=None, bins=None, bin_col=None, actual_col=None):
     )
     wrt_table.sort_values(by=bin_col_name, inplace=True)
 
-    return wrt_table
+    # calc the correlation between probab bin rank and the percent actual
+    # asssumes table in order at this point
+    if wrt_table.isnull().values.any():
+        return wrt_table, np.nan
+    else:
+        ranks = [i for i in range(wrt_table.shape[0])]
+        corr, p = stats.pearsonr(ranks, wrt_table["percent_actual"])
+
+        return [wrt_table, corr]
 
 
 def get_feature_importances(mod_type=None, mod=None, features=None):
+
+    features = ["ft_" + str(ft) if isinstance(ft, int) else ft for ft in features]
 
     if (
         ("RandomForest" in mod_type)
@@ -242,7 +250,7 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
     return
 
 
-def feature_importances(mod=None, X=None, num_top_fts=None):
+def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
 
     if type(mod).__name__ == "Pipeline":
 
@@ -258,12 +266,13 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
             mod=tmp_mod,
             features=tmp_fts,
         )
-        pu.plot_feature_importance(
-            ft_df=ft_imp_df,
-            mod_type=type(mod.named_steps["clf"]).__name__,
-            num_top_fts=num_top_fts,
-            plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
-        )
+        if disp:
+            pu.plot_feature_importance(
+                ft_df=ft_imp_df,
+                mod_type=type(mod.named_steps["clf"]).__name__,
+                num_top_fts=num_top_fts,
+                plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
+            )
 
     elif type(mod).__name__ == "VotingClassifier":
 
@@ -284,23 +293,25 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
                     mod=tmp_mod,
                     features=tmp_fts,
                 )
-                pu.plot_feature_importance(
-                    ft_df=tmp_ft_imp_df,
-                    mod_type=type(c.named_steps["clf"]).__name__,
-                    num_top_fts=num_top_fts,
-                    plot_title=type(c.named_steps["clf"]).__name__
-                    + " Model Importance",
-                )
+                if disp:
+                    pu.plot_feature_importance(
+                        ft_df=tmp_ft_imp_df,
+                        mod_type=type(c.named_steps["clf"]).__name__,
+                        num_top_fts=num_top_fts,
+                        plot_title=type(c.named_steps["clf"]).__name__
+                        + " Model Importance",
+                    )
             else:
                 tmp_ft_imp_df = get_feature_importances(
                     mod_type=type(c).__name__, mod=c, features=list(X.columns)
                 )
-                pu.plot_feature_importance(
-                    ft_df=tmp_ft_imp_df,
-                    mod_type=type(c).__name__,
-                    num_top_fts=num_top_fts,
-                    plot_title=type(c).__name__ + " Model Importance",
-                )
+                if disp:
+                    pu.plot_feature_importance(
+                        ft_df=tmp_ft_imp_df,
+                        mod_type=type(c).__name__,
+                        num_top_fts=num_top_fts,
+                        plot_title=type(c).__name__ + " Model Importance",
+                    )
 
             tmp_ft_imp_df.columns = ["features", "value"]
             tmp_ft_imp_df["features"] = (
@@ -313,11 +324,12 @@ def feature_importances(mod=None, X=None, num_top_fts=None):
         ft_imp_df = get_feature_importances(
             mod_type=type(mod).__name__, mod=mod, features=list(X.columns)
         )
-        pu.plot_feature_importance(
-            ft_df=ft_imp_df,
-            mod_type=type(mod).__name__,
-            num_top_fts=num_top_fts,
-            plot_title=type(mod).__name__ + " Model Importance",
-        )
+        if disp:
+            pu.plot_feature_importance(
+                ft_df=ft_imp_df,
+                mod_type=type(mod).__name__,
+                num_top_fts=num_top_fts,
+                plot_title=type(mod).__name__ + " Model Importance",
+            )
 
     return ft_imp_df

@@ -7,6 +7,7 @@ from eagles.Supervised.utils import metric_utils as mu
 import time
 import pandas as pd
 import numpy as np
+import scipy
 from IPython.display import display
 
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -24,7 +25,7 @@ def tune_test_model(
     X=None,
     y=None,
     model=None,
-    params=None,
+    params={},
     tune_metric=None,
     eval_metrics=[],
     num_cv=5,
@@ -39,7 +40,8 @@ def tune_test_model(
     n_jobs=1,
     random_seed=None,
     binary=True,
-    log="log",
+    disp=True,
+    log=None,
     log_name=None,
     log_path=None,
     log_note=None,
@@ -78,23 +80,30 @@ def tune_test_model(
     functions and classes. If not passed will use np.random to set this value
     :param binary: boolean default True, Flag to tell the functions whether or not is a binary classification problem.
     If it is a regression problem this argument is ignored.
+    :param disp: default True, boolean indicator to display graphs
     :param log: string or list default None, Expects either a string ("log", "data", "mod") or a list containing these
     keywords to tell the logger what to log. Note when a list is passed in the function will create a directory to store
     the logged out components.
     :param log_name: str default None, prefix name of logged out data. Ignored if log is None
     :param log_path: str default None, path to save log data to. Ignored if no log is None
     :param log_note: str default None, Note to be used in the log that is saved out. Ignored if no log
-    :return:
+    :return: dictionary containing final model fit, metrics, final cv data with predictions ,parameters, features, log data
     """
 
     if random_seed is None:
         random_seed = np.random.randint(1000, size=1)[0]
         print("Random Seed Value: " + str(random_seed))
 
+    # Check to see if pandas dataframe if not then convert to one
+    if not isinstance(X, pd.DataFrame):
+        if isinstance(X, scipy.sparse.csr.csr_matrix):
+            X = X.todense()
+        X = pd.DataFrame(X)
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
+
     # init the model and define the problem type (linear and svr don't take random_state args)
-    if model not in ["linear", "svr"] and not params:
-        params = {"random_state": random_seed}
-    mod_scv = mi.init_model(model=model, params=params)
+    mod_scv = mi.init_model(model=model, params=params, random_seed=random_seed)
 
     problem_type = mi.define_problem_type(mod_scv)
     if problem_type is None:
@@ -156,6 +165,7 @@ def tune_test_model(
             n_iter=n_iterations,
             scoring=tune_metric,
             cv=num_cv,
+            refit=True,
             n_jobs=n_jobs,
             verbose=2,
             random_state=random_seed,
@@ -178,6 +188,7 @@ def tune_test_model(
             param_grid=params,
             scoring=tune_metric,
             cv=num_cv,
+            refit=True,
             n_jobs=n_jobs,
             verbose=1,
         )
@@ -188,6 +199,15 @@ def tune_test_model(
 
     scv.fit(X, y)
 
+    print(
+        "Mean cross val "
+        + tune_metric
+        + " score of best estimator during parameter tuning: "
+        + str(scv.best_score_)
+        + "\n"
+    )
+
+    # make copy of params passed in for tuning and testing so that only best model params go through to model eval
     test_params = params.copy()
 
     mod = scv.best_estimator_
@@ -214,11 +234,11 @@ def tune_test_model(
 
     print("Performing model eval on best estimator")
 
-    log_data = model_eval(
+    res_dict = model_eval(
         X=X,
         y=y,
         model=mod,
-        params={},
+        params=params,
         metrics=eval_metrics,
         bins=bins,
         pipe=None,
@@ -228,6 +248,7 @@ def tune_test_model(
         get_ft_imp=get_ft_imp,
         random_seed=random_seed,
         binary=binary,
+        disp=disp,
         log=log,
         log_name=log_name,
         log_path=log_path,
@@ -235,6 +256,7 @@ def tune_test_model(
     )
 
     if log:
+        log_data = res_dict["log_data"]
 
         log_data["test_params"] = test_params
         log_data["tune_metric"] = tune_metric
@@ -287,7 +309,11 @@ def tune_test_model(
         else:
             logger.warning("LOG TYPE NOT SUPPORTED: " + str(log))
 
-    return [mod, params, features]
+    res_dict["model"] = mod
+    res_dict["params"] = params
+    res_dict["features"] = features
+
+    return res_dict
 
 
 def model_eval(
@@ -304,7 +330,8 @@ def model_eval(
     get_ft_imp=False,
     random_seed=None,
     binary=True,
-    log="log",
+    disp=True,
+    log=None,
     log_name=None,
     log_path=None,
     log_note=None,
@@ -326,19 +353,28 @@ def model_eval(
     :param get_ft_imp: boolean indicating to get and plot the feature importances
     :param random_seed: int for random seed setting
     :param binary: boolean indicating if model predictions are binary or multi-class
+    :param disp: default True, boolean indicator to display graphs
     :param log: boolean indicator to log out results
     :param log_name: string name of the logger doc
     :param log_path: string path to store logger doc if none data dir in model tuner dir is used
     :param log_note: string containing note to add at top of logger doc
     :param tune_test: boolean default False, Used as a pass through argument from the tune_test_model function
-    :return: model fitted on last cross validation set and last set of cv data for predictions
+    :return: dictionary containing final model fit, metrics, final cv data with predictions ,parameters, features, log data
     """
 
     if random_seed is None:
         random_seed = np.random.randint(1000, size=1)[0]
     print("Random Seed Value: " + str(random_seed))
 
-    mod = mi.init_model(model=model, params=params)
+    # Check to see if pandas dataframe if not then convert to one
+    if not isinstance(X, pd.DataFrame):
+        if isinstance(X, scipy.sparse.csr.csr_matrix):
+            X = X.todense()
+        X = pd.DataFrame(X)
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
+
+    mod = mi.init_model(model=model, params=params, random_seed=random_seed)
     problem_type = mi.define_problem_type(mod=mod)
     if problem_type is None:
         logger.warning("Could not detect problem type exiting")
@@ -389,25 +425,36 @@ def model_eval(
             avg=avg,
         )
 
-        print("Finished cv run: " + str(cnt) + " time: " + str(time.time() - cv_st))
+        print(
+            "Finished cv run: "
+            + str(cnt)
+            + " time: "
+            + str(round(time.time() - cv_st, 4))
+        )
         cnt += 1
 
     print("\nCV Run Scores")
     for metric in metrics:
         print(metric + " scores: " + str(metric_dictionary[metric + "_scores"]))
-        print(metric + " mean: " + str(metric_dictionary[metric + "_scores"].mean()))
+        print(
+            metric
+            + " mean: "
+            + str(round(metric_dictionary[metric + "_scores"].mean(), 4))
+        )
         print(
             metric
             + " standard deviation: "
-            + str(metric_dictionary[metric + "_scores"].std())
+            + str(round(metric_dictionary[metric + "_scores"].std(), 4))
             + " \n"
         )
 
-    print(" \n")
-
     print("Final cv train test split")
     for metric in metrics:
-        print(metric + " score: " + str(metric_dictionary[metric + "_scores"][-1]))
+        print(
+            metric
+            + " score: "
+            + str(round(metric_dictionary[metric + "_scores"][-1], 4))
+        )
 
     if problem_type == "clf":
         print(" \n")
@@ -416,23 +463,33 @@ def model_eval(
             y_test, preds, target_names=[str(x) for x in mod.classes_]
         )
 
-        pu.plot_confusion_matrix(cf=cf, labels=mod.classes_)
-        print(cr)
+        if disp:
+            pu.plot_confusion_matrix(cf=cf, labels=mod.classes_)
+            print(cr)
 
     if binary and problem_type == "clf":
         prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
-        bt = tu.create_bin_table(
+        bt, corr = tu.create_bin_table(
             df=prob_df, bins=bins, bin_col="probab", actual_col="actual"
         )
-        display(bt)
+        if disp:
+            display(bt)
+            if pd.notnull(corr):
+                print(
+                    "Correlation between probability bin order and percent actual: "
+                    + str(round(corr, 3))
+                )
 
-    if "roc_auc" in metrics:
-        pu.plot_roc_curve(y_true=y_test, pred_probs=pred_probs)
-    if "precision_recall_auc" in metrics:
-        pu.plot_precision_recall_curve(y_true=y_test, pred_probs=pred_probs)
+    if disp:
+        if "roc_auc" in metrics:
+            pu.plot_roc_curve(y_true=y_test, pred_probs=pred_probs)
+        if "precision_recall_auc" in metrics:
+            pu.plot_precision_recall_curve(y_true=y_test, pred_probs=pred_probs)
 
     if get_ft_imp:
-        ft_imp_df = tu.feature_importances(mod=mod, X=X, num_top_fts=num_top_fts)
+        ft_imp_df = tu.feature_importances(
+            mod=mod, X=X, num_top_fts=num_top_fts, disp=disp
+        )
 
     # create a copy of the final testing data and append the predictions, pred probs and true values
     fin_test_df = X_test.copy(deep=True)
@@ -497,14 +554,39 @@ def model_eval(
         if get_ft_imp:
             log_data["ft_imp_df"] = ft_imp_df
 
-        # if called from tune test then return the log data for final appending before logout
+        # if called from tune test then return res dict with everything except the model
         # else log out the data and then return the final dictionary
+        res_dict = {
+            "fin_cv_df": fin_test_df,
+            "metrics": {
+                k: metric_dictionary[k]
+                for k in metric_dictionary.keys()
+                if "_func" not in k
+            },
+            "log_data": log_data,
+        }
         if tune_test:
-            return log_data
+            return res_dict
         else:
             lu.log_results(
                 fl_name=log_name, fl_path=log_path, log_data=log_data, tune_test=False
             )
-            return [mod, fin_test_df]
+            res_dict["model"] = mod
+            return res_dict
 
-    return [mod, fin_test_df]
+    else:
+        # If no log and tune test return everything except the model else return the model as well
+        res_dict = {
+            "fin_cv_df": fin_test_df,
+            "metrics": {
+                k: metric_dictionary[k]
+                for k in metric_dictionary.keys()
+                if "_func" not in k
+            },
+            "log_data": {},
+        }
+        if tune_test:
+            return res_dict
+        else:
+            res_dict["model"] = mod
+            return res_dict
