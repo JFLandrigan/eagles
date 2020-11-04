@@ -4,9 +4,15 @@ from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.base import clone
 import numpy as np
 import pandas as pd
+import math
+from IPython.display import display
 import logging
 
 logger = logging.getLogger(__name__)
+
+# TODO add in low variance feature selection methods
+# TODO add in feature selection based on significance from coef p vals
+# TODO adjust so that if need scaling prefit of the regress models it will do it
 
 
 class EaglesFeatureSelection(object):
@@ -14,9 +20,11 @@ class EaglesFeatureSelection(object):
         self,
         methods=[],
         problem_type="clf",
-        model_pipe=None,
+        model_pipe=None,  # TODO change this to scale arg
         rf_imp_thresh=0.005,
         corr_thresh=0.9,
+        percent_rank_drop=0.1,  # proportion to drop from bottom of avg rank between models
+        class_weight=None,
         bin_fts=[],
         dont_drop=[],
         random_seed=None,
@@ -30,13 +38,16 @@ class EaglesFeatureSelection(object):
         self.sub_features = []
         self.imp_drop = []
         self.lin_drop = []
+        self.rank_drop = []
         self.corr_drop = []
         self.drop_fts = []
         self.methods = methods
         self.problem_type = problem_type
-        self.model_pipe = model_pipe
+        self.model_pipe = model_pipe  # TODO change this to scale arg
         self.rf_imp_thresh = rf_imp_thresh
         self.corr_thresh = corr_thresh
+        self.percent_rank_drop = percent_rank_drop
+        self.class_weight = class_weight
         self.bin_fts = bin_fts
         self.dont_drop = dont_drop
         self.random_seed = random_seed
@@ -103,13 +114,18 @@ class EaglesFeatureSelection(object):
     def _drop_rf_low_importance(self, X, y):
         if self.problem_type == "clf":
             forest = RandomForestClassifier(
-                n_estimators=200, random_state=self.random_seed, n_jobs=self.n_jobs
+                n_estimators=200,
+                class_weight=self.class_weight,
+                random_state=self.random_seed,
+                n_jobs=self.n_jobs,
             )
         else:
             forest = RandomForestRegressor(
-                n_estimators=200, random_state=self.random_seed, n_jobs=self.n_jobs
+                n_estimators=200, random_state=self.random_seed, n_jobs=self.n_jobs,
             )
 
+        # remove this step from the rf wouldn't scale features unless can think or another
+        # preproc step that may pass in like pca that would then run feature select on
         if self.model_pipe:
             tmp_pipe = clone(self.model_pipe)
             tmp_pipe.steps.append(["mod", forest])
@@ -120,9 +136,10 @@ class EaglesFeatureSelection(object):
         if self.model_pipe:
             forest = forest.named_steps["mod"]
 
-        rf_importances = forest.feature_importances_
-
-        ftImp = {"Feature": self.sub_features, "Importance": rf_importances}
+        ftImp = {
+            "Feature": self.sub_features,
+            "Importance": forest.feature_importances_,
+        }
         ftImp_df = pd.DataFrame(ftImp)
         ftImp_df.sort_values(["Importance"], ascending=False, inplace=True)
         self.imp_drop = list(
@@ -148,11 +165,17 @@ class EaglesFeatureSelection(object):
 
         if self.problem_type == "clf":
             lin_mod = LogisticRegression(
-                penalty="l1", solver="liblinear", random_state=self.random_seed
+                penalty="l1",
+                solver="liblinear",
+                class_weight=self.class_weight,
+                random_state=self.random_seed,
             )
         else:
             lin_mod = Lasso(random_state=self.random_seed)
 
+        # remove this step from the rf wouldn't scale features unless can think
+        # or another preproc step that may pass in like pca that would then run feature select on
+        # or just make this a scale logic
         if self.model_pipe:
             tmp_pipe = clone(self.model_pipe)
             tmp_pipe.steps.append(["mod", lin_mod])
@@ -182,12 +205,76 @@ class EaglesFeatureSelection(object):
             )
         return
 
-    def transform(self, X):
+    # TODO implement avg rank where fit regress and rf, get relative models ranks, take ag position
+    #  and then drop bottom percent with rank_drop
+    def _avg_rank_drop(self, X, y):
+        if self.problem_type == "clf":
+            forest = RandomForestClassifier(
+                n_estimators=200,
+                class_weight=self.class_weight,
+                random_state=self.random_seed,
+                n_jobs=self.n_jobs,
+            )
+        else:
+            forest = RandomForestRegressor(
+                n_estimators=200, random_state=self.random_seed, n_jobs=self.n_jobs
+            )
+
+        # fit rf and get ranks
+        forest.fit(X[self.sub_features], y)
+        tmp_rf = {
+            "Feature": self.sub_features,
+            "RF Importance": forest.feature_importances_,
+        }
+        tmp_rf = pd.DataFrame(tmp_rf)
+        tmp_rf.sort_values(["Value"], ascending=False, inplace=True)
+        tmp_rf["rf_rank"] = [i for i in range(tmp_rf.shape[0])]
+
+        if self.problem_type == "clf":
+            lin_mod = LogisticRegression(
+                penalty="l1",
+                class_weight=self.class_weight,
+                solver="liblinear",
+                random_state=self.random_seed,
+            )
+        else:
+            lin_mod = Lasso(random_state=self.random_seed)
+
+        # fit lr and get ranks
+        lin_mod.fit(X[self.sub_features], y)
+        if self.problem_type == "clf":
+            tmp_lin = pd.DataFrame(
+                {"Feature": self.sub_features, "Coef": abs(lin_mod.coef_[0])}
+            )
+        else:
+            tmp_lin = pd.DataFrame(
+                {"Feature": self.sub_features, "Coef": lin_mod.coef_}
+            )
+        tmp_lin.sort_values(["Value"], ascending=True, inplace=True)
+        tmp_lin["lr_rank"] = [i for i in range(tmp_lin.shape[0])]
+
+        # create the rank df
+        rank_df = tmp_rf.merge(
+            tmp_lin, how="left", left_on="Feature", right_on="Feature"
+        )
+        rank_df["Average Rank"] = rank_df[["rf_rank", "lr_rank"]].mean(axis=1)
+        rank_df.sort_values(["Average Rank"], ascending=True, inplace=True)
+        num_drop = math.ceil(self.percent_rank_drop * rank_df.shape[0])
+        num_keep = rank_df.shape[0] - num_drop
+        rank_df["drop"] = np.append(np.repeat(1, num_drop), np.repeat(1, num_keep))
+        self.rank_drop = list(rank_df[rank_df["drop"] == 1]["Feature"])
+
+        if self.plot_ft_importance:
+            rank_df.sort_values(["Average Rank"], ascending=False, inplace=True)
+            display(rank_df[["Feature", "Average Rank", "RF Importance", "Abs Coef"]])
+
+        return
+
+    def transform(self, X, y):
         """
-        Dummy function
+        Function to perform transform on given data (i.e. select features)
         :param X:
-        :param y:
-        :return:
+        :return: subsetted dataframe
         """
 
         return X[self.sub_features]
@@ -222,13 +309,18 @@ class EaglesFeatureSelection(object):
         if "regress" in self.methods:
             self._regress_drop(tmp_x, y)
 
-        self.drop_fts = list(set(self.imp_drop + self.lin_drop + self.corr_drop))
+        self.drop_fts = list(
+            set(self.imp_drop + self.lin_drop + self.corr_drop + self.rank_drop)
+        )
 
         self.sub_features = [
             col
             for col in self.sub_features
             if (col not in self.drop_fts) or (col in self.dont_drop)
         ]
+
+        if "avg_model_rank" in self.methods:
+            self._avg_rank_drop(tmp_x, y)
 
         if self.print_out:
             print("Final number of fts : " + str(len(self.sub_features)) + "\n \n")

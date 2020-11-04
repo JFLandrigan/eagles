@@ -1,4 +1,6 @@
 from eagles.Supervised import config
+from eagles.Supervised.utils.feature_selection import EaglesFeatureSelection
+from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import (
     RandomForestClassifier,
     ExtraTreesClassifier,
@@ -123,18 +125,56 @@ def init_model(model=None, params={}, random_seed=None):
     return mod
 
 
-def build_pipes(mod=None, params=None, scale=None, pipe=None):
+def build_pipes(
+    mod=None,
+    params: dict = None,
+    scale: str = None,
+    pipe=None,
+    select_features: str = None,
+    problem_type: str = "clf",
+):
 
     if pipe:
         pipe.steps.append(["clf", mod])
         mod = pipe
 
-    elif scale:
-        if scale == "standard":
-            mod = Pipeline([("scale", StandardScaler()), ("clf", mod)])
-        elif scale == "minmax":
-            mod = Pipeline([("scale", MinMaxScaler()), ("clf", mod)])
+    # If no pipeline but want scale or feature selection init a pipeline and append on the desired steps
+    mod = Pipeline()
 
+    # If scaling wanted adds the scaling
+    if scale:
+        if scale == "standard":
+            mod = mod.steps.append([("scale", StandardScaler())])
+        elif scale == "minmax":
+            mod = mod.steps.append([("scale", MinMaxScaler())])
+
+    # Appends the feature selection wanted
+    if select_features == "eagles":
+        mod = mod.steps.append(
+            [
+                "feature_selection",
+                EaglesFeatureSelection(
+                    methods=["correlation", "regress"], problem_type=problem_type
+                ),
+            ]
+        )
+    elif select_features == "select_from_model":
+        if problem_type == "clf":
+            mod = mod.steps.append(
+                [
+                    "feature_selection",
+                    SelectFromModel(estimator=LogisticRegression(penalty="l1")),
+                ]
+            )
+        elif problem_type == "regress":
+            mod = mod.steps.append(
+                ["feature_selection", SelectFromModel(estimator=Lasso())]
+            )
+
+    # Add the model to the end of the pipeline
+    mod = mod.steps.append(["clf", mod])
+
+    # Adjust the params for the model to make sure have appropriate prefix
     if params:
         params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
         return [mod, params]
