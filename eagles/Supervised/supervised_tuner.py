@@ -16,6 +16,7 @@ from skopt import BayesSearchCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
+import warnings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -111,7 +112,7 @@ def tune_test_model(
         return
 
     if pipe and (scale or select_features):
-        logger.warning(
+        warnings.warn(
             "ERROR CAN'T PASS IN PIPE OBJECT WITH SCALE AND/OR SELECT FEATURES"
         )
         return
@@ -194,9 +195,12 @@ def tune_test_model(
 
     mod = scv.best_estimator_
     params = mod.get_params()
-    if "feature_selection" in mod.named_steps:
-        inds = [mod.named_steps["feature_selection"].get_support()][0]
-        features = list(X.columns[inds])
+    if type(mod).__name__ == "Pipeline":
+        if "feature_selection" in mod.named_steps:
+            inds = [mod.named_steps["feature_selection"].get_support()][0]
+            features = list(X.columns[inds])
+        else:
+            features = list(X.columns[:])
     else:
         features = list(X.columns[:])
     print("Parameters of the best model: \n")
@@ -494,9 +498,12 @@ def model_eval(
     fin_test_df["preds"] = preds
     fin_test_df["pred_probs"] = pred_probs
 
-    if "feature_selection" in mod.named_steps:
-        inds = [mod.named_steps["feature_selection"].get_support()][0]
-        features = list(X.columns[inds])
+    if type(mod).__name__ == "Pipeline":
+        if "feature_selection" in mod.named_steps:
+            inds = [mod.named_steps["feature_selection"].get_support()][0]
+            features = list(X.columns[inds])
+        else:
+            features = list(X.columns[:])
     else:
         features = list(X.columns[:])
 

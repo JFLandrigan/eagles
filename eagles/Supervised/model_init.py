@@ -25,6 +25,7 @@ from sklearn.pipeline import Pipeline
 import numpy as np
 
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -133,50 +134,73 @@ def build_pipes(
     select_features: str = None,
     problem_type: str = "clf",
 ):
-
+    if problem_type == "clf":
+        mod_type = "clf"
+    else:
+        mod_type = "rgr"
+    # If pipeline passed in then add on the classifier
+    # else init the pipeline with the model
     if pipe:
-        pipe.steps.append(["clf", mod])
+        pipe.steps.append([mod_type, mod])
         mod = pipe
-
-    # If no pipeline but want scale or feature selection init a pipeline and append on the desired steps
-    mod = Pipeline()
+    else:
+        pipe = Pipeline(steps=[(mod_type, mod)])
+        mod = pipe
 
     # If scaling wanted adds the scaling
     if scale:
         if scale == "standard":
-            mod = mod.steps.append([("scale", StandardScaler())])
+            mod.steps.insert(0, ("scale", StandardScaler()))
         elif scale == "minmax":
-            mod = mod.steps.append([("scale", MinMaxScaler())])
+            mod.steps.insert(0, ("scale", MinMaxScaler()))
+        else:
+            warnings.warn(
+                "scaler not supported expects standard or minmax got: "
+                + scale
+                + " no scaler added to model"
+            )
 
     # Appends the feature selection wanted
+    # if wanted scaling then feature selection is second step (i.e. position 1) else first step (i.e. position 0)
+    if scale:
+        insert_position = 1
+    else:
+        insert_position = 0
+
     if select_features == "eagles":
-        mod = mod.steps.append(
+        mod.steps.insert(
+            insert_position,
             [
                 "feature_selection",
                 EaglesFeatureSelection(
                     methods=["correlation", "regress"], problem_type=problem_type
                 ),
-            ]
+            ],
         )
     elif select_features == "select_from_model":
         if problem_type == "clf":
-            mod = mod.steps.append(
+            mod.steps.insert(
+                insert_position,
                 [
                     "feature_selection",
                     SelectFromModel(estimator=LogisticRegression(penalty="l1")),
-                ]
+                ],
             )
         elif problem_type == "regress":
-            mod = mod.steps.append(
-                ["feature_selection", SelectFromModel(estimator=Lasso())]
+            mod.steps.insert(
+                insert_position,
+                ["feature_selection", SelectFromModel(estimator=Lasso())],
             )
-
-    # Add the model to the end of the pipeline
-    mod = mod.steps.append(["clf", mod])
 
     # Adjust the params for the model to make sure have appropriate prefix
     if params:
-        params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
+        if problem_type == "clf":
+            param_prefix = "clf__"
+        else:
+            param_prefix = "rgr__"
+        params = {
+            k if param_prefix in k else param_prefix + k: v for k, v in params.items()
+        }
         return [mod, params]
     else:
         return mod
