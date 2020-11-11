@@ -234,7 +234,7 @@ def tune_test_model(
         bins=bins,
         pipe=None,
         scale=None,
-        select_features=select_features,
+        select_features=None,
         num_top_fts=num_top_fts,
         num_cv=num_cv,
         get_ft_imp=get_ft_imp,
@@ -434,20 +434,18 @@ def model_eval(
         )
         cnt += 1
 
-    print("\nCV Run Scores")
-    for metric in metrics:
-        print(metric + " scores: " + str(metric_dictionary[metric + "_scores"]))
-        print(
-            metric
-            + " mean: "
-            + str(round(metric_dictionary[metric + "_scores"].mean(), 4))
-        )
-        print(
-            metric
-            + " standard deviation: "
-            + str(round(metric_dictionary[metric + "_scores"].std(), 4))
-            + " \n"
-        )
+    if disp:
+        tmp_metric_dict = {
+            k: metric_dictionary[k]
+            for k in metric_dictionary.keys()
+            if "_func" not in k
+        }
+        tmp_metric_df = pd.DataFrame(tmp_metric_dict)
+        tmp_metric_df.loc["mean"] = tmp_metric_df.mean()
+        tmp_metric_df.loc["std"] = tmp_metric_df.std()
+        cv_cols = [i for i in range(1, num_cv + 1)] + ["mean", "std"]
+        tmp_metric_df.insert(loc=0, column="cv run", value=cv_cols)
+        display(tmp_metric_df.style.set_caption("Metric Scores by CV Run").hide_index())
 
     print("Final cv train test split")
     for metric in metrics:
@@ -474,7 +472,7 @@ def model_eval(
             df=prob_df, bins=bins, bin_col="probab", actual_col="actual"
         )
         if disp:
-            display(bt)
+            display(bt.style.bar(subset=["percent_actual"], color="#d65f5f"))
             if pd.notnull(corr):
                 print(
                     "Correlation between probability bin order and percent actual: "

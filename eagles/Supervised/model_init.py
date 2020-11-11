@@ -181,10 +181,12 @@ def build_pipes(
         if problem_type == "clf":
             mod.steps.insert(
                 insert_position,
-                [
+                (
                     "feature_selection",
-                    SelectFromModel(estimator=LogisticRegression(penalty="l1")),
-                ],
+                    SelectFromModel(
+                        estimator=LogisticRegression(solver="liblinear", penalty="l1")
+                    ),
+                ),
             )
         elif problem_type == "regress":
             mod.steps.insert(

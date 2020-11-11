@@ -270,7 +270,7 @@ class EaglesFeatureSelection(object):
 
         return
 
-    def transform(self, X, y):
+    def transform(self, X):
         """
         Function to perform transform on given data (i.e. select features)
         :param X:

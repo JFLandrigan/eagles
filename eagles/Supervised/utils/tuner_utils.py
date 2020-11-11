@@ -256,7 +256,7 @@ def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
 
         if "feature_selection" in mod.named_steps:
             inds = [mod.named_steps["feature_selection"].get_support()][0]
-            tmp_fts = X.columns[inds]
+            tmp_fts = list(X.columns[inds])
         else:
             tmp_fts = list(X.columns)
 
