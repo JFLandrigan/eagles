@@ -29,8 +29,8 @@ class EaglesFeatureSelection(object):
         dont_drop=[],
         random_seed=None,
         n_jobs=None,
-        plot_ft_importance=False,
-        plot_ft_corr=False,
+        plot_ft_importance=True,
+        plot_ft_corr=True,
         print_out=False,
     ):
         self.name = "EaglesFeatureSelection"
@@ -205,8 +205,6 @@ class EaglesFeatureSelection(object):
             )
         return
 
-    # TODO implement avg rank where fit regress and rf, get relative models ranks, take ag position
-    #  and then drop bottom percent with rank_drop
     def _avg_rank_drop(self, X, y):
         if self.problem_type == "clf":
             forest = RandomForestClassifier(
@@ -327,4 +325,9 @@ class EaglesFeatureSelection(object):
             print("Final features: " + str(self.sub_features) + "\n \n")
             print("Dropped features: " + str(self.drop_fts) + "\n \n")
 
+        return self
+
+    def fit_transform(self, X, y):
+        self.fit(X, y)
+        self.transform(X)
         return self
