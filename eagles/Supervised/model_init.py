@@ -1,4 +1,6 @@
 from eagles.Supervised import config
+from eagles.Supervised.utils.feature_selection import EaglesFeatureSelection
+from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import (
     RandomForestClassifier,
     ExtraTreesClassifier,
@@ -12,7 +14,13 @@ from sklearn.ensemble import (
     VotingRegressor,
 )
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso, ElasticNet
+from sklearn.linear_model import (
+    LogisticRegression,
+    LinearRegression,
+    Lasso,
+    ElasticNet,
+    Ridge,
+)
 from sklearn.svm import SVC, SVR
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
@@ -23,6 +31,7 @@ from sklearn.pipeline import Pipeline
 import numpy as np
 
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +111,8 @@ def init_model(model=None, params={}, random_seed=None):
         mod = LinearRegression(**params)
     elif model == "lasso":
         mod = Lasso(**params)
+    elif model == "ridge":
+        mod = Ridge(**params)
     elif model == "elastic":
         mod = ElasticNet(**params)
     elif model == "svr":
@@ -123,20 +134,83 @@ def init_model(model=None, params={}, random_seed=None):
     return mod
 
 
-def build_pipes(mod=None, params=None, scale=None, pipe=None):
-
+def build_pipes(
+    mod=None,
+    params: dict = None,
+    scale: str = None,
+    pipe=None,
+    select_features: str = None,
+    problem_type: str = "clf",
+):
+    if problem_type == "clf":
+        mod_type = "clf"
+    else:
+        mod_type = "rgr"
+    # If pipeline passed in then add on the classifier
+    # else init the pipeline with the model
     if pipe:
-        pipe.steps.append(["clf", mod])
+        pipe.steps.append((mod_type, mod))
+        mod = pipe
+    else:
+        pipe = Pipeline(steps=[(mod_type, mod)])
         mod = pipe
 
-    elif scale:
+    # If scaling wanted adds the scaling
+    if scale:
         if scale == "standard":
-            mod = Pipeline([("scale", StandardScaler()), ("clf", mod)])
+            mod.steps.insert(0, ("scale", StandardScaler()))
         elif scale == "minmax":
-            mod = Pipeline([("scale", MinMaxScaler()), ("clf", mod)])
+            mod.steps.insert(0, ("scale", MinMaxScaler()))
+        else:
+            warnings.warn(
+                "scaler not supported expects standard or minmax got: "
+                + scale
+                + " no scaler added to model"
+            )
 
+    # Appends the feature selection wanted
+    # if wanted scaling then feature selection is second step (i.e. position 1) else first step (i.e. position 0)
+    if scale:
+        insert_position = 1
+    else:
+        insert_position = 0
+
+    if select_features == "eagles":
+        mod.steps.insert(
+            insert_position,
+            (
+                "feature_selection",
+                EaglesFeatureSelection(
+                    methods=["correlation", "regress"], problem_type=problem_type
+                ),
+            ),
+        )
+    elif select_features == "select_from_model":
+        if problem_type == "clf":
+            mod.steps.insert(
+                insert_position,
+                (
+                    "feature_selection",
+                    SelectFromModel(
+                        estimator=LogisticRegression(solver="liblinear", penalty="l1")
+                    ),
+                ),
+            )
+        elif problem_type == "regress":
+            mod.steps.insert(
+                insert_position,
+                ("feature_selection", SelectFromModel(estimator=Lasso())),
+            )
+
+    # Adjust the params for the model to make sure have appropriate prefix
     if params:
-        params = {k if "clf__" in k else "clf__" + k: v for k, v in params.items()}
+        if problem_type == "clf":
+            param_prefix = "clf__"
+        else:
+            param_prefix = "rgr__"
+        params = {
+            k if param_prefix in k else param_prefix + k: v for k, v in params.items()
+        }
         return [mod, params]
     else:
         return mod

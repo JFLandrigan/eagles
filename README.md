@@ -45,11 +45,12 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "dt_clf" : DecisionTreeClassifier     | "dt_regress" : DecisionTreeRegressor     |
 | "logistic" : LogisticRegression       | "linear" : LinearRegression              |
 | "svc" : SVC                           | "lasso" : Lasso                          |
-| "knn_clf" : KNeighborsClassifier      | "elastic" : ElasticNet                   |
-| "nn" : MLPClassifier                  | "svr" : SVR                              |
-| "ada_clf" : AdaBoostClassifier        | "knn_regress" : KNeighborsRegressor      |
-| "et_clf": ExtraTreesClassifier        | "ada_regress" : AdaBoostRegressor        |
-| "vc_clf"  :VotingClassifier           | "et_regress": ExtraTreesRegressor        |
+| "knn_clf" : KNeighborsClassifier      | "ridge":Ridge                            |
+| "nn" : MLPClassifier                  | "elastic" : ElasticNet                   |
+| "ada_clf" : AdaBoostClassifier        | "svr" : SVR                              |
+| "et_clf": ExtraTreesClassifier        | "knn_regress" : KNeighborsRegressor      |
+| "vc_clf"  :VotingClassifier           | "ada_regress" : AdaBoostRegressor        |
+|                                       | "et_regress": ExtraTreesRegressor        |
 |                                       | "vc_regress" : VotingRegressor           |
 
 Defaults:
@@ -108,7 +109,7 @@ Note the DBSCAN algorithm uses internal methods to find the optimal number of cl
 
 - Model embedded within a pipeline: pass in relative parameters as dictionary  with key (parameter) value (listed parameter setting) pairs. Note that the parameter keys should follow the format  ```clf__< parameter >```
 
-- Models embedded within a VotingClassifier or Voting Regressor: pass in relative parameters as dictionary  with key (parameter) value (listed parameter setting) pairs. Note that the parameter keys should follow the format (note the follwing example assumes a random forest and a logistic regression):
+- Models embedded within a VotingClassifier or Voting Regressor: pass in relative parameters as dictionary  with key (parameter) value (listed parameter setting) pairs. Note that the parameter keys should follow the format (note the following example assumes a random forest and a logistic regression):
 
   ```
   pars = {'rf__clf__n_estimators':[x for x in range(100,300,50)]

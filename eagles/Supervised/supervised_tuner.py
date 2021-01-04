@@ -16,6 +16,7 @@ from skopt import BayesSearchCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
+import warnings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -64,8 +65,8 @@ def tune_test_model(
     argument the function will append the model to the pipeline.
     :param scale: string default None, Expects either "standard" or "minmax". When set will create a sklearn pipeline
     object with scale and sklearn model
-    :param select_features: dict default None, The expected dict should contain pass through arguments for the tuner
-    utils select features function. Note the selection happens pre tuning and not during it.
+    :param select_features: str default None, The expected can be set to "eagles"
+    (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop).
     :param bins: list default None, For binary classification problems determines the number of granularity of the
     probability bins used in the distribution by percent actual output
     :param num_top_fts: int default None, Tells feature importance function to plot top X features. If none all feature
@@ -110,41 +111,23 @@ def tune_test_model(
         logger.warning("Could not detect problem type exiting")
         return
 
-    if pipe and scale:
-        logger.warning("ERROR CAN'T PASS IN PIPE OBJECT AND ALSO SCALE ARG")
+    if pipe and (scale or select_features):
+        warnings.warn(
+            "ERROR CAN'T PASS IN PIPE OBJECT WITH SCALE AND/OR SELECT FEATURES"
+        )
         return
 
     if pipe:
         mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, pipe=pipe)
-    elif scale:
-        mod_scv, params = mi.build_pipes(mod=mod_scv, params=params, scale=scale)
-
-    if select_features:
-        print("Selecting features")
-
-        sub_fts, drop_fts = tu.select_features(
-            X=X,
-            y=y,
-            methods=select_features["methods"],
+    elif scale or select_features:
+        mod_scv, params = mi.build_pipes(
+            mod=mod_scv,
+            params=params,
+            scale=scale,
+            select_features=select_features,
             problem_type=problem_type,
-            model_pipe=select_features["model_pipe"],
-            imp_thresh=select_features["imp_thresh"],
-            corr_thresh=select_features["corr_thresh"],
-            bin_fts=select_features["bin_fts"],
-            dont_drop=select_features["dont_drop"],
-            random_seed=random_seed,
-            n_jobs=n_jobs,
-            plot_ft_importance=select_features["plot_ft_importance"],
-            plot_ft_corr=select_features["plot_ft_corr"],
         )
 
-        X = X[sub_fts].copy(deep=True)
-
-        features = sub_fts.copy()
-    else:
-        features = list(X.columns)
-
-    # ensure that a tune metric is defined
     if tune_metric is None:
         if problem_type == "clf":
             tune_metric = "f1"
@@ -212,6 +195,14 @@ def tune_test_model(
 
     mod = scv.best_estimator_
     params = mod.get_params()
+    if type(mod).__name__ == "Pipeline":
+        if "feature_selection" in mod.named_steps:
+            inds = [mod.named_steps["feature_selection"].get_support()][0]
+            features = list(X.columns[inds])
+        else:
+            features = list(X.columns[:])
+    else:
+        features = list(X.columns[:])
     print("Parameters of the best model: \n")
     if type(mod).__name__ == "Pipeline":
         print(type(mod.named_steps["clf"]).__name__ + " Parameters")
@@ -243,6 +234,7 @@ def tune_test_model(
         bins=bins,
         pipe=None,
         scale=None,
+        select_features=None,
         num_top_fts=num_top_fts,
         num_cv=num_cv,
         get_ft_imp=get_ft_imp,
@@ -325,6 +317,7 @@ def model_eval(
     bins=None,
     pipe=None,
     scale=None,
+    select_features=None,
     num_top_fts=None,
     num_cv=5,
     get_ft_imp=False,
@@ -348,6 +341,8 @@ def model_eval(
     :param bins: list of bin ranges to output the score to percent actual distribution
     :param pipe: Sklearn pipeline object without classifier
     :param scale: string Standard or MinMax indicating to scale the features during cross validation
+    :param select_features: str default None, The expected can be set to "eagles"
+    (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop).
     :param num_top_fts: int number of top features to be plotted
     :param num_cv: int number of cross validations to do
     :param get_ft_imp: boolean indicating to get and plot the feature importances
@@ -382,8 +377,14 @@ def model_eval(
 
     if pipe:
         mod = mi.build_pipes(mod=mod, pipe=pipe)
-    elif scale:
-        mod = mi.build_pipes(mod=mod, scale=scale)
+    elif scale or select_features:
+        mod, params = mi.build_pipes(
+            mod=mod,
+            params=params,
+            scale=scale,
+            select_features=select_features,
+            problem_type=problem_type,
+        )
 
     if len(metrics) == 0:
         if problem_type == "clf":
@@ -433,20 +434,19 @@ def model_eval(
         )
         cnt += 1
 
-    print("\nCV Run Scores")
-    for metric in metrics:
-        print(metric + " scores: " + str(metric_dictionary[metric + "_scores"]))
-        print(
-            metric
-            + " mean: "
-            + str(round(metric_dictionary[metric + "_scores"].mean(), 4))
-        )
-        print(
-            metric
-            + " standard deviation: "
-            + str(round(metric_dictionary[metric + "_scores"].std(), 4))
-            + " \n"
-        )
+    if disp:
+        tmp_metric_dict = {
+            k: metric_dictionary[k]
+            for k in metric_dictionary.keys()
+            if "_func" not in k
+        }
+        tmp_metric_df = pd.DataFrame(tmp_metric_dict)
+        tmp_metric_df.loc["mean"] = tmp_metric_df.mean()
+        tmp_metric_df.loc["std"] = tmp_metric_df.std()
+        cv_cols = [i for i in range(1, num_cv + 1)] + ["mean", "std"]
+        tmp_metric_df.insert(loc=0, column="cv run", value=cv_cols)
+        tmp_metric_df.reset_index(drop=True, inplace=True)
+        display(tmp_metric_df)
 
     print("Final cv train test split")
     for metric in metrics:
@@ -497,9 +497,18 @@ def model_eval(
     fin_test_df["preds"] = preds
     fin_test_df["pred_probs"] = pred_probs
 
+    if type(mod).__name__ == "Pipeline":
+        if "feature_selection" in mod.named_steps:
+            inds = [mod.named_steps["feature_selection"].get_support()][0]
+            features = list(X.columns[inds])
+        else:
+            features = list(X.columns[:])
+    else:
+        features = list(X.columns[:])
+
     if log:
         log_data = {
-            "features": list(X.columns),
+            "features": features,
             "random_seed": random_seed,
             "metrics": metric_dictionary,
             "params": list(),
