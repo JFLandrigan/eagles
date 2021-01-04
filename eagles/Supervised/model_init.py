@@ -141,7 +141,7 @@ def build_pipes(
     # If pipeline passed in then add on the classifier
     # else init the pipeline with the model
     if pipe:
-        pipe.steps.append([mod_type, mod])
+        pipe.steps.append((mod_type, mod))
         mod = pipe
     else:
         pipe = Pipeline(steps=[(mod_type, mod)])
@@ -170,12 +170,12 @@ def build_pipes(
     if select_features == "eagles":
         mod.steps.insert(
             insert_position,
-            [
+            (
                 "feature_selection",
                 EaglesFeatureSelection(
                     methods=["correlation", "regress"], problem_type=problem_type
                 ),
-            ],
+            ),
         )
     elif select_features == "select_from_model":
         if problem_type == "clf":
@@ -191,7 +191,7 @@ def build_pipes(
         elif problem_type == "regress":
             mod.steps.insert(
                 insert_position,
-                ["feature_selection", SelectFromModel(estimator=Lasso())],
+                ("feature_selection", SelectFromModel(estimator=Lasso())),
             )
 
     # Adjust the params for the model to make sure have appropriate prefix

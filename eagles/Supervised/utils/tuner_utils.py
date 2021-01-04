@@ -250,6 +250,55 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
     return
 
 
+def _unpack_voting_models(mod, X, disp, num_top_fts):
+
+    ft_imp_df = pd.DataFrame()
+
+    for c in mod.estimators_:
+        if type(c).__name__ == "Pipeline":
+
+            if "feature_selection" in c.named_steps:
+                inds = [mod.named_steps["feature_selection"].get_support()][0]
+                tmp_fts = X.columns[inds]
+            else:
+                tmp_fts = list(X.columns)
+
+            tmp_mod = c.named_steps["clf"]
+            tmp_ft_imp_df = get_feature_importances(
+                mod_type=type(c.named_steps["clf"]).__name__,
+                mod=tmp_mod,
+                features=tmp_fts,
+            )
+            if disp:
+                pu.plot_feature_importance(
+                    ft_df=tmp_ft_imp_df,
+                    mod_type=type(c.named_steps["clf"]).__name__,
+                    num_top_fts=num_top_fts,
+                    plot_title=type(c.named_steps["clf"]).__name__
+                    + " Model Importance",
+                )
+        else:
+            tmp_ft_imp_df = get_feature_importances(
+                mod_type=type(c).__name__, mod=c, features=list(X.columns)
+            )
+            if disp:
+                pu.plot_feature_importance(
+                    ft_df=tmp_ft_imp_df,
+                    mod_type=type(c).__name__,
+                    num_top_fts=num_top_fts,
+                    plot_title=type(c).__name__ + " Model Importance",
+                )
+
+        tmp_ft_imp_df.columns = ["features", "value"]
+        tmp_ft_imp_df["features"] = (
+            type(c.named_steps["clf"]).__name__ + "_" + tmp_ft_imp_df["features"]
+        )
+
+        ft_imp_df = pd.concat([ft_imp_df, tmp_ft_imp_df])
+
+    return ft_imp_df
+
+
 def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
 
     if type(mod).__name__ == "Pipeline":
@@ -261,11 +310,18 @@ def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
             tmp_fts = list(X.columns)
 
         tmp_mod = mod.named_steps["clf"]
-        ft_imp_df = get_feature_importances(
-            mod_type=type(mod.named_steps["clf"]).__name__,
-            mod=tmp_mod,
-            features=tmp_fts,
-        )
+
+        if type(mod.named_steps["clf"]).__name__ in [
+            "VotingClassifier",
+            "VotingRegressor",
+        ]:
+            ft_imp_df = _unpack_voting_models(tmp_mod, X[tmp_fts], disp, num_top_fts)
+        else:
+            ft_imp_df = get_feature_importances(
+                mod_type=type(mod.named_steps["clf"]).__name__,
+                mod=tmp_mod,
+                features=tmp_fts,
+            )
         if disp:
             pu.plot_feature_importance(
                 ft_df=ft_imp_df,
@@ -274,51 +330,9 @@ def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
                 plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
             )
 
-    elif type(mod).__name__ == "VotingClassifier":
+    elif type(mod).__name__ in ["VotingClassifier", "VotingRegressor"]:
 
-        ft_imp_df = pd.DataFrame()
-
-        for c in mod.estimators_:
-            if type(c).__name__ == "Pipeline":
-
-                if "feature_selection" in c.named_steps:
-                    inds = [mod.named_steps["feature_selection"].get_support()][0]
-                    tmp_fts = X.columns[inds]
-                else:
-                    tmp_fts = list(X.columns)
-
-                tmp_mod = c.named_steps["clf"]
-                tmp_ft_imp_df = get_feature_importances(
-                    mod_type=type(c.named_steps["clf"]).__name__,
-                    mod=tmp_mod,
-                    features=tmp_fts,
-                )
-                if disp:
-                    pu.plot_feature_importance(
-                        ft_df=tmp_ft_imp_df,
-                        mod_type=type(c.named_steps["clf"]).__name__,
-                        num_top_fts=num_top_fts,
-                        plot_title=type(c.named_steps["clf"]).__name__
-                        + " Model Importance",
-                    )
-            else:
-                tmp_ft_imp_df = get_feature_importances(
-                    mod_type=type(c).__name__, mod=c, features=list(X.columns)
-                )
-                if disp:
-                    pu.plot_feature_importance(
-                        ft_df=tmp_ft_imp_df,
-                        mod_type=type(c).__name__,
-                        num_top_fts=num_top_fts,
-                        plot_title=type(c).__name__ + " Model Importance",
-                    )
-
-            tmp_ft_imp_df.columns = ["features", "value"]
-            tmp_ft_imp_df["features"] = (
-                type(c.named_steps["clf"]).__name__ + "_" + tmp_ft_imp_df["features"]
-            )
-
-            ft_imp_df = pd.concat([ft_imp_df, tmp_ft_imp_df])
+        ft_imp_df = _unpack_voting_models(mod, X, disp, num_top_fts)
 
     else:
         ft_imp_df = get_feature_importances(
