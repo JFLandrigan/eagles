@@ -14,7 +14,13 @@ from sklearn.ensemble import (
     VotingRegressor,
 )
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso, ElasticNet
+from sklearn.linear_model import (
+    LogisticRegression,
+    LinearRegression,
+    Lasso,
+    ElasticNet,
+    Ridge,
+)
 from sklearn.svm import SVC, SVR
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
@@ -105,6 +111,8 @@ def init_model(model=None, params={}, random_seed=None):
         mod = LinearRegression(**params)
     elif model == "lasso":
         mod = Lasso(**params)
+    elif model == "ridge":
+        mod = Ridge(**params)
     elif model == "elastic":
         mod = ElasticNet(**params)
     elif model == "svr":

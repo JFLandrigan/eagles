@@ -445,6 +445,7 @@ def model_eval(
         tmp_metric_df.loc["std"] = tmp_metric_df.std()
         cv_cols = [i for i in range(1, num_cv + 1)] + ["mean", "std"]
         tmp_metric_df.insert(loc=0, column="cv run", value=cv_cols)
+        tmp_metric_df.reset_index(drop=True, inplace=True)
         display(tmp_metric_df)
 
     print("Final cv train test split")
