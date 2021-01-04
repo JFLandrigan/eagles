@@ -445,7 +445,7 @@ def model_eval(
         tmp_metric_df.loc["std"] = tmp_metric_df.std()
         cv_cols = [i for i in range(1, num_cv + 1)] + ["mean", "std"]
         tmp_metric_df.insert(loc=0, column="cv run", value=cv_cols)
-        display(tmp_metric_df.style.set_caption("Metric Scores by CV Run").hide_index())
+        display(tmp_metric_df)
 
     print("Final cv train test split")
     for metric in metrics:
@@ -472,7 +472,7 @@ def model_eval(
             df=prob_df, bins=bins, bin_col="probab", actual_col="actual"
         )
         if disp:
-            display(bt.style.bar(subset=["percent_actual"], color="#d65f5f"))
+            display(bt)
             if pd.notnull(corr):
                 print(
                     "Correlation between probability bin order and percent actual: "
