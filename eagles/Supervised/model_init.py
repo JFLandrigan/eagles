@@ -72,7 +72,7 @@ def init_model(model=None, params={}, random_seed=None):
         return
 
     if model not in ["linear", "svr"] and "random_state" not in params.keys():
-        params = {"random_state": random_seed}
+        params["random_state"] = random_seed
 
     if model == "rf_clf":
         mod = RandomForestClassifier(**params)
