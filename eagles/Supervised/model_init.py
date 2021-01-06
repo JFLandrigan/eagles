@@ -65,14 +65,27 @@ def define_problem_type(mod=None, y=None):
     return problem_type
 
 
-def init_model(model=None, params={}, random_seed=None):
+def init_model(model=None, params={}, random_seed=None, tune_test=False):
 
     if model is None:
         logger.warning("NO MODEL PASSED IN")
         return
 
-    if model not in ["linear", "svr"] and "random_state" not in params.keys():
-        params["random_state"] = random_seed
+    random_state_flag = [True if "random_state" in pr else False for pr in params]
+    random_state_flag = any(random_state_flag)
+
+    if model not in [
+        "linear",
+        "svr",
+        "vc_clf",
+        "vc_regress",
+        "knn_clf",
+        "knn_regress",
+    ] and ("random_state" not in params.keys() and random_state_flag is False):
+        if tune_test:
+            params["random_state"] = [random_seed]
+        else:
+            params["random_state"] = random_seed
 
     if model == "rf_clf":
         mod = RandomForestClassifier(**params)
@@ -175,32 +188,41 @@ def build_pipes(
     else:
         insert_position = 0
 
-    if select_features == "eagles":
-        mod.steps.insert(
-            insert_position,
-            (
-                "feature_selection",
-                EaglesFeatureSelection(
-                    methods=["correlation", "regress"], problem_type=problem_type
-                ),
-            ),
-        )
-    elif select_features == "select_from_model":
-        if problem_type == "clf":
+    if select_features:
+        if select_features not in ["eagles", "select_from_model"]:
+            warnings.warn(
+                "select_features not supported expects eagles or select_from_model got: "
+                + str(select_features)
+            )
+
+        if select_features == "eagles":
             mod.steps.insert(
                 insert_position,
                 (
                     "feature_selection",
-                    SelectFromModel(
-                        estimator=LogisticRegression(solver="liblinear", penalty="l1")
+                    EaglesFeatureSelection(
+                        methods=["correlation", "regress"], problem_type=problem_type
                     ),
                 ),
             )
-        elif problem_type == "regress":
-            mod.steps.insert(
-                insert_position,
-                ("feature_selection", SelectFromModel(estimator=Lasso())),
-            )
+        elif select_features == "select_from_model":
+            if problem_type == "clf":
+                mod.steps.insert(
+                    insert_position,
+                    (
+                        "feature_selection",
+                        SelectFromModel(
+                            estimator=LogisticRegression(
+                                solver="liblinear", penalty="l1"
+                            )
+                        ),
+                    ),
+                )
+            elif problem_type == "regress":
+                mod.steps.insert(
+                    insert_position,
+                    ("feature_selection", SelectFromModel(estimator=Lasso())),
+                )
 
     # Adjust the params for the model to make sure have appropriate prefix
     if params:

@@ -104,7 +104,9 @@ def tune_test_model(
         y = pd.Series(y)
 
     # init the model and define the problem type (linear and svr don't take random_state args)
-    mod_scv = mi.init_model(model=model, params=params, random_seed=random_seed)
+    mod_scv = mi.init_model(
+        model=model, params=params, random_seed=random_seed, tune_test=True
+    )
 
     problem_type = mi.define_problem_type(mod_scv)
     if problem_type is None:
