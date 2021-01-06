@@ -168,9 +168,17 @@ class EaglesFeatureSelection:
         X_tmp = X.copy(deep=True)
 
         if self.problem_type == "clf":
+            if len(set(y)) > 2:
+                solver = "saga"
+                multi_class = "multinomial"
+            else:
+                solver = "saga"
+                multi_class = "auto"
+
             lin_mod = LogisticRegression(
                 penalty="l1",
-                solver="liblinear",
+                solver=solver,
+                multi_class=multi_class,
                 class_weight=self.class_weight,
                 random_state=self.random_seed,
             )
@@ -237,10 +245,17 @@ class EaglesFeatureSelection:
         tmp_rf["rf_rank"] = [i for i in range(tmp_rf.shape[0])]
 
         if self.problem_type == "clf":
+            if len(set(y)) > 2:
+                solver = "saga"
+                multi_class = "multinomial"
+            else:
+                solver = "sag"
+                multi_class = "auto"
             lin_mod = LogisticRegression(
                 penalty="l2",
                 class_weight=self.class_weight,
-                solver="liblinear",
+                solver=solver,
+                multi_class=multi_class,
                 random_state=self.random_seed,
             )
         else:

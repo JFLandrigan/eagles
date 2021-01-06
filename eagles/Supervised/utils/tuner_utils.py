@@ -290,9 +290,11 @@ def _unpack_voting_models(mod, X, disp, num_top_fts):
                 )
 
         tmp_ft_imp_df.columns = ["features", "value"]
-        tmp_ft_imp_df["features"] = (
-            type(c.named_steps["clf"]).__name__ + "_" + tmp_ft_imp_df["features"]
-        )
+        if type(c).__name__ == "Pipeline":
+            tmp_mod_name = type(c.named_steps["clf"]).__name__
+        else:
+            tmp_mod_name = type(c).__name__
+        tmp_ft_imp_df["features"] = tmp_mod_name + "_" + tmp_ft_imp_df["features"]
 
         ft_imp_df = pd.concat([ft_imp_df, tmp_ft_imp_df])
 
