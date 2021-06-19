@@ -9,16 +9,29 @@ def construct_path():
     return file_path
 
 
-def load_iris():
-    file_path = construct_path()
-    return pd.read_csv(file_path + "iris.csv")
+def list_datasets() -> None:
+    """
+    List out file names and quick dataset stats
+    :return: None
+    """
+
+    print("Datasets Include\n")
+    path = construct_path()
+    files = [fl for fl in os.listdir(path) if "csv" in fl]
+    for fl in files:
+        print(f"***** {fl} ******\n")
+        tmp = load_data(data_set=fl.replace(".csv", ""))
+        print(tmp.info())
+        print("-----------------------------------------\n")
+
+    return None
 
 
-def load_wines():
-    file_path = construct_path()
-    return pd.read_csv(file_path + "wines.csv")
-
-
-def load_stack_overflow_dat():
-    file_path = construct_path()
-    return pd.read_csv(file_path + "stack-overflow-data.csv")
+def load_data(data_set: str = None):
+    """
+    Function to load in datasets.
+    :param data_set: Strings default None. Expects iris, wines, stack-overflow-data or titanic
+    :return: pandas dataframe with relevant data
+    """
+    fl_path = construct_path()
+    return pd.read_csv(fl_path + data_set + ".csv")
