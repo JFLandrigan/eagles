@@ -125,7 +125,17 @@ class SupervisedTuner:
                 n_jobs=n_jobs,
                 verbose=1,
             )
-        return scv
+
+        scv.fit(X, y)
+
+        print(
+            "Mean cross val "
+            + self.tune_metric
+            + " score of best estimator during parameter tuning: "
+            + str(scv.best_score_)
+            + "\n"
+        )
+        return
 
     def eval(
         self,
