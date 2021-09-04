@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class SupervisedTuner:
+    # should set defaults like tuner = 'random_cv'
     def __init__(
         self,
         tune_metric=None,
@@ -61,6 +62,8 @@ class SupervisedTuner:
         self.log_name = log_name
         self.log_path = log_path
         self.log_note = log_note
+        self.mod = None
+        self.params = None
 
         # init random seed
         if self.random_seed is None:
@@ -92,7 +95,7 @@ class SupervisedTuner:
         # set up the parameter search object
         if self.tuner == "random_cv":
             scv = RandomizedSearchCV(
-                mod_scv,
+                self.mod,
                 param_distributions=params,
                 n_iter=n_iterations,
                 scoring=tune_metric,
@@ -105,7 +108,7 @@ class SupervisedTuner:
 
         elif self.tuner == "bayes_cv":
             scv = BayesSearchCV(
-                estimator=mod_scv,
+                estimator=self.mod,
                 search_spaces=params,
                 scoring=tune_metric,
                 n_iter=n_iterations,
@@ -117,7 +120,7 @@ class SupervisedTuner:
 
         elif self.tuner == "grid_cv":
             scv = GridSearchCV(
-                mod_scv,
+                self.mod,
                 param_grid=params,
                 scoring=tune_metric,
                 cv=num_cv,
@@ -135,7 +138,8 @@ class SupervisedTuner:
             + str(scv.best_score_)
             + "\n"
         )
-        return
+
+        return scv
 
     def eval(
         self,
@@ -154,14 +158,14 @@ class SupervisedTuner:
         self._check_data()
 
         # init the model and define the problem type (linear and svr don't take random_state args)
-        mod = mi.init_model(
+        self.mod = mi.init_model(
             model=model,
             params=params,
             random_seed=self.random_seed,
             tune_test=self.tune_test,
         )
 
-        problem_type = mi.define_problem_type(mod)
+        problem_type = mi.define_problem_type(self.mod)
         if problem_type is None:
             logger.warning("Could not detect problem type exiting")
             return
@@ -173,10 +177,10 @@ class SupervisedTuner:
             return
 
         if pipe:
-            mod, params = mi.build_pipes(mod=mod, params=params, pipe=pipe)
+            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe)
         elif scale or select_features:
-            mod, params = mi.build_pipes(
-                mod=mod,
+            self.mod, params = mi.build_pipes(
+                mod=self.mod,
                 params=params,
                 scale=scale,
                 select_features=select_features,
@@ -195,5 +199,11 @@ class SupervisedTuner:
             self.eval_metrics = ["f1"]
         elif len(self.eval_metrics) == 0 and problem_type == "regress":
             self.eval_metrics = ["mse"]
+
+        # if param tuning wanted then implement tune params and grab best estimator
+        if self.tuner:
+            scv = self._tune_model_params()
+            self.mod = scv.best_estimator_
+            self.params = self.mod.get_params()
 
         return
