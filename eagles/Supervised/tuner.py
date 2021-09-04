@@ -1,8 +1,11 @@
 from eagles.Supervised import model_init as mi
-from eagles.Supervised.utils import tuner_utils as tu
-from eagles.Supervised.utils import plot_utils as pu
-from eagles.Supervised.utils import logger_utils as lu
-from eagles.Supervised.utils import metric_utils as mu
+from eagles.Supervised.utils import (
+    tuner_utils as tu,
+    _print_utils,
+    plot_utils as pu,
+    logger_utils as lu,
+    metric_utils as mu,
+)
 
 import time
 import pandas as pd
@@ -96,50 +99,151 @@ class SupervisedTuner:
         if self.tuner == "random_cv":
             scv = RandomizedSearchCV(
                 self.mod,
-                param_distributions=params,
-                n_iter=n_iterations,
-                scoring=tune_metric,
-                cv=num_cv,
+                param_distributions=self.params,
+                n_iter=self.n_iterations,
+                scoring=self.tune_metric,
+                cv=self.num_cv,
                 refit=True,
-                n_jobs=n_jobs,
+                n_jobs=self.n_jobs,
                 verbose=2,
-                random_state=random_seed,
+                random_state=self.random_seed,
             )
 
         elif self.tuner == "bayes_cv":
             scv = BayesSearchCV(
                 estimator=self.mod,
-                search_spaces=params,
-                scoring=tune_metric,
-                n_iter=n_iterations,
-                cv=num_cv,
+                search_spaces=self.params,
+                scoring=self.tune_metric,
+                n_iter=self.n_iterations,
+                cv=self.num_cv,
                 verbose=2,
                 refit=True,
-                n_jobs=n_jobs,
+                n_jobs=self.n_jobs,
             )
 
         elif self.tuner == "grid_cv":
             scv = GridSearchCV(
                 self.mod,
-                param_grid=params,
-                scoring=tune_metric,
-                cv=num_cv,
+                param_grid=self.params,
+                scoring=self.tune_metric,
+                cv=self.num_cv,
                 refit=True,
-                n_jobs=n_jobs,
+                n_jobs=self.n_jobs,
                 verbose=1,
             )
 
-        scv.fit(X, y)
+        scv.fit(self.X, self.y)
 
         print(
-            "Mean cross val "
-            + self.tune_metric
+            self.tune_metric
             + " score of best estimator during parameter tuning: "
             + str(scv.best_score_)
             + "\n"
         )
 
         return scv
+
+    def model_eval(self):
+        print("Performing CV Runs: " + str(self.num_cv))
+        kf = KFold(n_splits=self.num_cv, shuffle=True, random_state=self.random_seed)
+
+        if self.binary:
+            avg = "binary"
+        else:
+            avg = "macro"
+
+        metric_dictionary = mu.init_model_metrics(metrics=self.eval_metrics)
+
+        # TODO need to implement for forward chain as well
+        cnt = 1
+        for train_index, test_index in kf.split(self.X):
+            cv_st = time.time()
+
+            X_train, X_test = self.X.iloc[train_index], self.X.iloc[test_index]
+            y_train, y_test = self.y.iloc[train_index], self.y.iloc[test_index]
+
+            self.mod.fit(X_train, y_train)
+            preds = self.mod.predict(X_test)
+
+            if self.problem_type == "clf":
+                pred_probs = self.mod.predict_proba(X_test)[:, 1]
+            else:
+                pred_probs = []
+
+            metric_dictionary = mu.calc_metrics(
+                metrics=self.eval_metrics,
+                metric_dictionary=metric_dictionary,
+                y_test=y_test,
+                preds=preds,
+                pred_probs=pred_probs,
+                avg=avg,
+            )
+
+            print(
+                "Finished cv run: "
+                + str(cnt)
+                + " time: "
+                + str(round(time.time() - cv_st, 4))
+            )
+            cnt += 1
+
+        if self.disp:
+            tmp_metric_dict = {
+                k: metric_dictionary[k]
+                for k in metric_dictionary.keys()
+                if "_func" not in k
+            }
+            tmp_metric_df = pd.DataFrame(tmp_metric_dict)
+            tmp_metric_df.loc["mean"] = tmp_metric_df.mean()
+            tmp_metric_df.loc["std"] = tmp_metric_df.std()
+            cv_cols = [i for i in range(1, self.num_cv + 1)] + ["mean", "std"]
+            tmp_metric_df.insert(loc=0, column="cv run", value=cv_cols)
+            tmp_metric_df.reset_index(drop=True, inplace=True)
+            display(tmp_metric_df)
+
+        print("Final cv train test split")
+        for metric in self.eval_metrics:
+            print(
+                metric
+                + " score: "
+                + str(round(metric_dictionary[metric + "_scores"][-1], 4))
+            )
+
+        if self.problem_type == "clf":
+            print(" \n")
+            cf = confusion_matrix(y_test, preds)
+            cr = classification_report(
+                y_test, preds, target_names=[str(x) for x in self.mod.classes_]
+            )
+
+            if self.disp:
+                pu.plot_confusion_matrix(cf=cf, labels=self.mod.classes_)
+                print(cr)
+
+        if self.binary and self.problem_type == "clf":
+            prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
+            bt, corr = tu.create_bin_table(
+                df=prob_df, bins=self.bins, bin_col="probab", actual_col="actual"
+            )
+            if self.disp:
+                display(bt)
+                if pd.notnull(corr):
+                    print(
+                        "Correlation between probability bin order and percent actual: "
+                        + str(round(corr, 3))
+                    )
+
+        if self.disp:
+            if "roc_auc" in self.eval_metrics:
+                pu.plot_roc_curve(y_true=y_test, pred_probs=pred_probs)
+            if "precision_recall_auc" in self.eval_metrics:
+                pu.plot_precision_recall_curve(y_true=y_test, pred_probs=pred_probs)
+
+        if self.get_ft_imp:
+            ft_imp_df = tu.feature_importances(
+                mod=self.mod, X=self.X, num_top_fts=self.num_top_fts, disp=self.disp
+            )
+        return
 
     def eval(
         self,
@@ -165,8 +269,8 @@ class SupervisedTuner:
             tune_test=self.tune_test,
         )
 
-        problem_type = mi.define_problem_type(self.mod)
-        if problem_type is None:
+        self.problem_type = mi.define_problem_type(self.mod)
+        if self.problem_type is None:
             logger.warning("Could not detect problem type exiting")
             return
 
@@ -184,20 +288,20 @@ class SupervisedTuner:
                 params=params,
                 scale=scale,
                 select_features=select_features,
-                problem_type=problem_type,
+                problem_type=self.problem_type,
             )
 
         # now that init the class can prob have user define these and then check in the init
         if self.tune_metric is None:
-            if problem_type == "clf":
+            if self.problem_type == "clf":
                 self.tune_metric = "f1"
             else:
                 self.tune_metric = "neg_mean_squared_error"
 
         # ensure that eval metrics have been defined
-        if len(self.eval_metrics) == 0 and problem_type == "clf":
+        if len(self.eval_metrics) == 0 and self.problem_type == "clf":
             self.eval_metrics = ["f1"]
-        elif len(self.eval_metrics) == 0 and problem_type == "regress":
+        elif len(self.eval_metrics) == 0 and self.problem_type == "regress":
             self.eval_metrics = ["mse"]
 
         # if param tuning wanted then implement tune params and grab best estimator
@@ -205,5 +309,19 @@ class SupervisedTuner:
             scv = self._tune_model_params()
             self.mod = scv.best_estimator_
             self.params = self.mod.get_params()
+            _ = _print_utils(mod=self.mod, X=self.X)
+
+        # perform the model eval
+        _ = self.model_eval()
+
+        # generate logs
+        if type(self.mod).__name__ == "Pipeline":
+            if "feature_selection" in self.mod.named_steps:
+                inds = [self.mod.named_steps["feature_selection"].get_support()][0]
+                features = list(X.columns[inds])
+            else:
+                features = list(X.columns[:])
+        else:
+            features = list(X.columns[:])
 
         return
