@@ -154,6 +154,8 @@ class SupervisedTuner:
 
         metric_dictionary = mu.init_model_metrics(metrics=self.eval_metrics)
 
+        res_dict = {"cr": None, "cf": None, "bt": None, "ft_imp_df": None}
+
         # TODO need to implement for forward chain as well
         cnt = 1
         for train_index, test_index in kf.split(self.X):
@@ -201,6 +203,8 @@ class SupervisedTuner:
             tmp_metric_df.reset_index(drop=True, inplace=True)
             display(tmp_metric_df)
 
+        res_dict["metric_dictionary"] = metric_dictionary
+
         print("Final cv train test split")
         for metric in self.eval_metrics:
             print(
@@ -209,12 +213,16 @@ class SupervisedTuner:
                 + str(round(metric_dictionary[metric + "_scores"][-1], 4))
             )
 
+        # TODO ADD in res_dict cr, cf, bt and ftimpdf
         if self.problem_type == "clf":
             print(" \n")
             cf = confusion_matrix(y_test, preds)
             cr = classification_report(
                 y_test, preds, target_names=[str(x) for x in self.mod.classes_]
             )
+
+            res_dict["cr"] = cr
+            res_dict["cf"] = cf
 
             if self.disp:
                 pu.plot_confusion_matrix(cf=cf, labels=self.mod.classes_)
@@ -225,6 +233,7 @@ class SupervisedTuner:
             bt, corr = tu.create_bin_table(
                 df=prob_df, bins=self.bins, bin_col="probab", actual_col="actual"
             )
+            res_dict["bt"] = bt
             if self.disp:
                 display(bt)
                 if pd.notnull(corr):
@@ -243,8 +252,11 @@ class SupervisedTuner:
             ft_imp_df = tu.feature_importances(
                 mod=self.mod, X=self.X, num_top_fts=self.num_top_fts, disp=self.disp
             )
-        return
+            res_dict["ft_imp_df"] = ft_imp_df
 
+        return res_dict
+
+    # Make sure logic for params works
     def eval(
         self,
         X: pd.DataFrame = None,
@@ -268,6 +280,10 @@ class SupervisedTuner:
             random_seed=self.random_seed,
             tune_test=self.tune_test,
         )
+        if self.tune_test:
+            test_params = params.copy()
+        else:
+            test_params = None
 
         self.problem_type = mi.define_problem_type(self.mod)
         if self.problem_type is None:
@@ -312,7 +328,9 @@ class SupervisedTuner:
             _ = _print_utils(mod=self.mod, X=self.X)
 
         # perform the model eval
-        _ = self.model_eval()
+        res_dict = self.model_eval()
+        res_dict["model"] = self.mod
+        res_dict["params"] = self.params
 
         # generate logs
         if type(self.mod).__name__ == "Pipeline":
@@ -324,4 +342,75 @@ class SupervisedTuner:
         else:
             features = list(X.columns[:])
 
-        return
+        res_dict["features"] = features
+
+        if self.log:
+            log_data = lu.build_log_data(
+                mod=self.mod,
+                features=features,
+                metric_dictionary=res_dict["metric_dictionary"],
+                random_seed=self.random_seed,
+                cf=res_dict["cf"],
+                cr=res_dict["cr"],
+                bt=res_dict["bt"],
+                ft_imp_df=res_dict["ft_imp_df"],
+                test_params=test_params,
+                tune_metric=self.tune_metric,
+                note=self.log_note,
+            )
+            if isinstance(self.log, list):
+                self.log_path, self.log_name, timestr = lu.construct_save_path(
+                    fl_path=self.log_path,
+                    fl_name=self.log_name,
+                    model_name=log_data["model"],
+                    save_dir=True,
+                )
+            else:
+                self.log_path, self.log_name, timestr = lu.construct_save_path(
+                    fl_path=self.log_path,
+                    fl_name=self.log_name,
+                    model_name=log_data["model"],
+                    save_dir=False,
+                )
+
+            if isinstance(self.log, list):
+                for x in self.log:
+                    if x == "log":
+                        lu.log_results(
+                            fl_name=self.log_name,
+                            fl_path=self.log_path,
+                            log_data=log_data,
+                            tune_test=True,
+                        )
+                    elif x == "data":
+                        if ~isinstance(X, pd.DataFrame):
+                            X = pd.DataFrame(X)
+
+                        tmp_data = X.copy(deep=True)
+                        tmp_data["y_true"] = y
+                        lu.pickle_data(
+                            data=tmp_data,
+                            fl_path=self.log_path,
+                            fl_name=self.log_name,
+                            data_type=x,
+                        )
+                    elif x == "mod":
+                        lu.pickle_data(
+                            data=self.mod,
+                            fl_path=self.log_path,
+                            fl_name=self.log_name,
+                            data_type=x,
+                        )
+                    else:
+                        logger.warning("LOG TYPE NOT SUPPORTED: " + x)
+            elif self.log == "log":
+                lu.log_results(
+                    fl_name=self.log_name,
+                    fl_path=self.log_path,
+                    log_data=log_data,
+                    tune_test=True,
+                )
+            else:
+                logger.warning("LOG TYPE NOT SUPPORTED: " + str(self.log))
+
+        return res_dict

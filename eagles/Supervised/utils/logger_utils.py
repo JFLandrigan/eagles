@@ -56,8 +56,8 @@ def build_log_data(
     cr=None,
     bt=None,
     ft_imp_df=None,
-    test_params,
-    tune_metric,
+    test_params=None,
+    tune_metric=None,
     note=None,
 ):
     log_data = {
