@@ -1,3 +1,5 @@
+# for lime use https://github.com/marcotcr/lime
+
 from eagles.Supervised import model_init as mi
 from eagles.Supervised.utils import (
     tuner_utils as tu,
