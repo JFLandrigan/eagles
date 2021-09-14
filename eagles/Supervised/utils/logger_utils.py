@@ -61,11 +61,11 @@ def build_log_data(
     note=None,
 ):
     log_data = {
-            "features": features,
-            "random_seed": random_seed,
-            "metrics": metric_dictionary,
-            "params": list(),
-        }
+        "features": features,
+        "random_seed": random_seed,
+        "metrics": metric_dictionary,
+        "params": list(),
+    }
 
     if type(mod).__name__ == "Pipeline":
         log_data["params"].append(
@@ -89,14 +89,17 @@ def build_log_data(
                 )
             else:
                 log_data["params"].append(
-                    [type(c).__name__, str(c.get_params()),]
+                    [
+                        type(c).__name__,
+                        str(c.get_params()),
+                    ]
                 )
     else:
         log_data["params"].append([type(mod).__name__, str(mod.get_params())])
 
-    if cf:
+    if cf is not None:
         log_data["cf"] = cf
-    if cr:
+    if cr is not None:
         log_data["cr"] = cr
 
     if type(mod).__name__ == "Pipeline":
@@ -108,21 +111,22 @@ def build_log_data(
     else:
         log_data["model"] = type(mod).__name__
 
-    if bt:
+    if bt is not None:
         log_data["bin_table"] = bt
 
-    if ft_imp_df:
+    if ft_imp_df is not None:
         log_data["ft_imp_df"] = ft_imp_df
 
-    if test_params:
+    if test_params is not None:
         log_data["test_params"] = test_params
-    if tune_metric:
+    if tune_metric is not None:
         log_data["tune_metric"] = tune_metric
 
     if note:
         log_data["note"] = note
 
-    return
+    return log_data
+
 
 def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
 
@@ -205,6 +209,3 @@ def pickle_data(data=None, fl_path=None, fl_name=None, data_type=None):
         pickle.dump(data, handle)
 
     return
-
-
-

@@ -380,7 +380,7 @@ class SupervisedTuner:
                             fl_name=self.log_name,
                             fl_path=self.log_path,
                             log_data=log_data,
-                            tune_test=True,
+                            tune_test=self.tune_test,
                         )
                     elif x == "data":
                         if ~isinstance(X, pd.DataFrame):
@@ -408,7 +408,7 @@ class SupervisedTuner:
                     fl_name=self.log_name,
                     fl_path=self.log_path,
                     log_data=log_data,
-                    tune_test=True,
+                    tune_test=self.tune_test,
                 )
             else:
                 logger.warning("LOG TYPE NOT SUPPORTED: " + str(self.log))
