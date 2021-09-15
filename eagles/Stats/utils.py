@@ -76,9 +76,10 @@ def get_agg_stats_means(
     agg_stats = agg_stats.round(4)
     if disp:
         display(
-            agg_stats.style.set_caption("Group Level Stats").background_gradient(
-                subset=["mean"], cmap="vlag"
-            )
+            agg_stats
+            # agg_stats.style.set_caption("Group Level Stats").background_gradient(
+            #     subset=["mean"], cmap="vlag"
+            # )
         )
 
     return agg_stats

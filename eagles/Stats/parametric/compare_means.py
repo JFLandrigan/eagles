@@ -209,7 +209,8 @@ def t_test(
     res = pd.DataFrame({"Statistic": config.t_test_cols, "Value": stat_values,})
     agg_stats = u.get_agg_stats_means(data=data, iv=iv, dv=dv, disp=disp)
     if disp:
-        display(res.style.set_caption("Test Results").hide_index())
+        # display(res.style.set_caption("Test Results").hide_index())
+        display(res)
         pu.group_box_plot(data=data, iv=iv, dv=dv)
 
     return res, agg_stats
