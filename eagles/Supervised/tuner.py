@@ -35,11 +35,11 @@ class SupervisedTuner:
     def __init__(
         self,
         tune_metric=None,
+        tuner=None,
         eval_metrics=[],
         num_cv=5,
         bins=None,
         num_top_fts=None,
-        tuner=None,
         n_iterations=15,
         get_ft_imp=True,
         n_jobs=1,
@@ -67,6 +67,8 @@ class SupervisedTuner:
         self.log_name = log_name
         self.log_path = log_path
         self.log_note = log_note
+        self.X = None
+        self.y = None
         self.mod = None
         self.params = None
 
@@ -96,12 +98,13 @@ class SupervisedTuner:
         return
 
     # TODO look into implementing this: https://github.com/ray-project/tune-sklearn
-    def _tune_model_params(self):
+    def _tune_model_params(self, params: dict = None):
+
         # set up the parameter search object
         if self.tuner == "random_cv":
             scv = RandomizedSearchCV(
                 self.mod,
-                param_distributions=self.params,
+                param_distributions=params,
                 n_iter=self.n_iterations,
                 scoring=self.tune_metric,
                 cv=self.num_cv,
@@ -114,7 +117,7 @@ class SupervisedTuner:
         elif self.tuner == "bayes_cv":
             scv = BayesSearchCV(
                 estimator=self.mod,
-                search_spaces=self.params,
+                search_spaces=params,
                 scoring=self.tune_metric,
                 n_iter=self.n_iterations,
                 cv=self.num_cv,
@@ -126,7 +129,7 @@ class SupervisedTuner:
         elif self.tuner == "grid_cv":
             scv = GridSearchCV(
                 self.mod,
-                param_grid=self.params,
+                param_grid=params,
                 scoring=self.tune_metric,
                 cv=self.num_cv,
                 refit=True,
@@ -258,7 +261,9 @@ class SupervisedTuner:
 
         return res_dict
 
-    # Make sure logic for params works
+    # TODO update the logic for the params passing currently even when it is tune test it inits models
+    #  params to lists that testing
+
     def eval(
         self,
         X: pd.DataFrame = None,
@@ -275,17 +280,23 @@ class SupervisedTuner:
         self.y = y
         self._check_data()
 
+        if self.tune_test:
+            print(f"Performing parameter tuning using: {self.tuner}")
+            test_params = params.copy()
+        else:
+            test_params = None
+
         # init the model and define the problem type (linear and svr don't take random_state args)
+        # control init of the params here based on context of tune test may need if else logic to control this cause the
+        # params would be dict with lists
+
+        # figure out if this control logic is messing things up when it comes to getting random state in params
         self.mod = mi.init_model(
             model=model,
             params=params,
             random_seed=self.random_seed,
             tune_test=self.tune_test,
         )
-        if self.tune_test:
-            test_params = params.copy()
-        else:
-            test_params = None
 
         self.problem_type = mi.define_problem_type(self.mod)
         if self.problem_type is None:
@@ -299,7 +310,7 @@ class SupervisedTuner:
             return
 
         if pipe:
-            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe)
+            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe,)
         elif scale or select_features:
             self.mod, params = mi.build_pipes(
                 mod=self.mod,
@@ -310,11 +321,12 @@ class SupervisedTuner:
             )
 
         # now that init the class can prob have user define these and then check in the init
-        if self.tune_metric is None:
-            if self.problem_type == "clf":
-                self.tune_metric = "f1"
-            else:
-                self.tune_metric = "neg_mean_squared_error"
+        if self.tune_test:
+            if self.tune_metric is None:
+                if self.problem_type == "clf":
+                    self.tune_metric = "f1"
+                else:
+                    self.tune_metric = "neg_mean_squared_error"
 
         # ensure that eval metrics have been defined
         if len(self.eval_metrics) == 0 and self.problem_type == "clf":
@@ -324,10 +336,10 @@ class SupervisedTuner:
 
         # if param tuning wanted then implement tune params and grab best estimator
         if self.tuner:
-            scv = self._tune_model_params()
+            scv = self._tune_model_params(params=params)
             self.mod = scv.best_estimator_
             self.params = self.mod.get_params()
-            _ = _print_utils(mod=self.mod, X=self.X)
+            _ = _print_utils._print_param_tuning_results(mod=self.mod, X=self.X)
 
         # perform the model eval
         res_dict = self.model_eval()

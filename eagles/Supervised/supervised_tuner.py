@@ -104,10 +104,11 @@ def tune_test_model(
         y = pd.Series(y)
 
     # init the model and define the problem type (linear and svr don't take random_state args)
+    print(params)
     mod_scv = mi.init_model(
         model=model, params=params, random_seed=random_seed, tune_test=True
     )
-
+    print(params)
     problem_type = mi.define_problem_type(mod_scv)
     if problem_type is None:
         logger.warning("Could not detect problem type exiting")
