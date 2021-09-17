@@ -39,7 +39,7 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "svc" : SVC                           | "lasso" : Lasso                          |
 | "knn_clf" : KNeighborsClassifier      | "ridge":Ridge                            |
 | "nn" : MLPClassifier                  | "elastic" : ElasticNet                   |
-| "ada_clf" : AdaBoostClassifier        | "poisson":Poisson                        |
+| "ada_clf" : AdaBoostClassifier        | "poisson":PoissonRegressor               |
 | "et_clf": ExtraTreesClassifier        | "svr" : SVR                              |
 | "vc_clf"  :VotingClassifier           | "knn_regress" : KNeighborsRegressor      |
 |                                       | "ada_regress" : AdaBoostRegressor        |

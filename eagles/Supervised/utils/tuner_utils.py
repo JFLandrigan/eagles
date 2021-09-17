@@ -231,10 +231,8 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
 
         return ftImp_df
 
-    elif (
-        ("Regression" in mod_type)
-        or (mod_type == "Lasso")
-        or (mod_type == "ElasticNet")
+    elif ("Regression" in mod_type) or (
+        mod_type in ["Lasso", "ElasticNet", "PoissonRegressor"]
     ):
         if mod_type == "LogisticRegression":
             tmp = pd.DataFrame({"Feature": features, "Coef": mod.coef_[0]})
