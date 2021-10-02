@@ -34,23 +34,44 @@ class SupervisedTuner:
     # should set defaults like tuner = 'random_cv'
     def __init__(
         self,
-        tune_metric=None,
-        tuner=None,
-        eval_metrics=[],
-        num_cv=5,
-        bins=None,
-        num_top_fts=None,
-        n_iterations=15,
-        get_ft_imp=True,
-        n_jobs=1,
-        random_seed=None,
-        binary=True,
-        disp=True,
-        log=None,
-        log_name=None,
-        log_path=None,
-        log_note=None,
+        tune_metric: str = None,
+        tuner: str = None,
+        eval_metrics: list = [],
+        num_cv: int = 5,
+        bins: list = None,
+        num_top_fts: int = None,
+        n_iterations: int = 15,
+        get_ft_imp: bool = True,
+        n_jobs: int = 1,
+        random_seed: int = None,
+        binary: bool = True,
+        disp: bool = True,
+        log: str or list = None,
+        log_name: str = None,
+        log_path: str = None,
+        log_note: str = None,
     ) -> None:
+        """[summary]
+
+        Args:
+            tune_metric (str, optional): Defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the paranmeter tuning phase. Defaults to None.
+            tuner (str, optional): Indicator for type of param tuning search. Defaults to random_cv but can get grid_cv or bayes_cv as well. Defaults to None.
+            eval_metrics (list, optional): [description]. Defaults to [].
+            num_cv (int, optional): Number of cross validation iterations to be performed. Defaults to 5.
+            bins (list, optional): For binary classification problems determines the number of granularity of the probability bins used in the distribution by percent actual output. Defaults to None.
+            num_top_fts (int, optional): Number of most important features to include in output of eval. If none prints all importance values. Defaults to None.
+            n_iterations (int, optional): Number of paramter tuning iterations to perform when using ranomd_cv or bayes_cv. Defaults to 15.
+            get_ft_imp (bool, optional): Boolean indicator for whether or not to include feature importance. Defaults to True.
+            n_jobs (int, optional): Number of parrallel jobs to run. Defaults to 1.
+            random_seed (int, optional): Random seed setting. If none a random seed is set using numpy random. Defaults to None.
+            binary (bool, optional): If classification model bool indicator for whether or not binary classification. Defaults to True.
+            disp (bool, optional): Boolean indicator to display results of evaluation or not. Defaults to True.
+            log (strorlist, optional): Expects "log" or list with one of following "log", "mod", "data". Defaults to None.
+            log_name (str, optional): Name of log file. Defaults to None.
+            log_path (str, optional): Path to directory where want to store logged data. Defaults to None.
+            log_note (str, optional): Model evaluation note to store in log. Defaults to None.
+        """
+
         self.tune_metric = tune_metric
         self.eval_metrics = eval_metrics
         self.num_cv = num_cv
@@ -271,9 +292,23 @@ class SupervisedTuner:
         model=None,
         params: dict = None,
         pipe=None,
-        scale=None,
-        select_features=None,
-    ):
+        scale: str = None,
+        select_features: str = None,
+    ) -> dict:
+        """
+        Function to run the model tuning and evaluation. 
+        Args:
+            X (pd.DataFrame, optional): Pandas dataframe only containing features to be modelled. Defaults to None.
+            y (pd.Series, optional): Pandas series containing output for model to predict. Defaults to None.
+            model ([str or sklearn compatible model object]: String name of model evaluating (see model support) or sklearn compatible model . Defaults to None.
+            params (dict, optional): Dictionary containing key value pairs for parameters of model. Note for tuning values should be in list. Defaults to None.
+            pipe ([type], optional): Sklearn compatible pipeline object. Defaults to None.
+            scale ([str], optional): Standard or MinMax indicating to scale the features during cross validation. Defaults to None.
+            select_features ([str], optional): The expected can be set to "eagles" (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop).. Defaults to None.
+
+        Returns:
+            dict: Dictionary containing results from tuning including model object, tuning metrics, parameter, features and others. 
+        """
 
         # check data format
         self.X = X
