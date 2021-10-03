@@ -27,9 +27,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# need to determine which paramters would be passed in when call eval method versus what would be passed in with class init
-
-
 class SupervisedTuner:
     # should set defaults like tuner = 'random_cv'
     def __init__(
