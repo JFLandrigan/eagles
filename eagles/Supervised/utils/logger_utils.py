@@ -47,6 +47,87 @@ def construct_save_path(fl_path=None, fl_name=None, model_name=None, save_dir=Fa
     return [fl_path, fl_name, timestr]
 
 
+def build_log_data(
+    mod,
+    features,
+    metric_dictionary,
+    random_seed,
+    cf=None,
+    cr=None,
+    bt=None,
+    ft_imp_df=None,
+    test_params=None,
+    tune_metric=None,
+    note=None,
+):
+    log_data = {
+        "features": features,
+        "random_seed": random_seed,
+        "metrics": metric_dictionary,
+        "params": list(),
+    }
+
+    if type(mod).__name__ == "Pipeline":
+        log_data["params"].append(
+            [
+                type(mod.named_steps["clf"]).__name__,
+                str(mod.named_steps["clf"].get_params()),
+            ]
+        )
+
+    elif "Voting" in type(mod).__name__:
+        log_data["params"].append(
+            str([type(mod).__name__, str(mod.get_params()["weights"])])
+        )
+        for c in mod.estimators_:
+            if type(c).__name__ == "Pipeline":
+                log_data["params"].append(
+                    [
+                        type(c.named_steps["clf"]).__name__,
+                        str(c.named_steps["clf"].get_params()),
+                    ]
+                )
+            else:
+                log_data["params"].append(
+                    [
+                        type(c).__name__,
+                        str(c.get_params()),
+                    ]
+                )
+    else:
+        log_data["params"].append([type(mod).__name__, str(mod.get_params())])
+
+    if cf is not None:
+        log_data["cf"] = cf
+    if cr is not None:
+        log_data["cr"] = cr
+
+    if type(mod).__name__ == "Pipeline":
+        log_data["model"] = type(mod).__name__
+        pipe_steps = "Pipe steps: "
+        for k in mod.named_steps.keys():
+            pipe_steps = pipe_steps + type(mod.named_steps[k]).__name__ + " "
+        log_data["pipe_steps"] = pipe_steps
+    else:
+        log_data["model"] = type(mod).__name__
+
+    if bt is not None:
+        log_data["bin_table"] = bt
+
+    if ft_imp_df is not None:
+        log_data["ft_imp_df"] = ft_imp_df
+
+    if test_params is not None:
+        log_data["test_params"] = test_params
+    if tune_metric is not None:
+        log_data["tune_metric"] = tune_metric
+
+    if note:
+        log_data["note"] = note
+
+    return log_data
+
+
 def log_results(fl_name=None, fl_path=None, log_data=None, tune_test=True):
 
     fl_path, fl_name, timestr = construct_save_path(

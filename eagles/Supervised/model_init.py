@@ -20,6 +20,7 @@ from sklearn.linear_model import (
     Lasso,
     ElasticNet,
     Ridge,
+    PoissonRegressor,
 )
 from sklearn.svm import SVC, SVR
 from sklearn.neural_network import MLPClassifier
@@ -81,6 +82,7 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
         "vc_regress",
         "knn_clf",
         "knn_regress",
+        "poisson",
     ] and ("random_state" not in params.keys() and random_state_flag is False):
         if tune_test:
             params["random_state"] = [random_seed]
@@ -128,6 +130,8 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
         mod = Ridge(**params)
     elif model == "elastic":
         mod = ElasticNet(**params)
+    elif model == "poisson":
+        mod = PoissonRegressor(**params)
     elif model == "svr":
         mod = SVR(**params)
     elif model == "knn_regress":
