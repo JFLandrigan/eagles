@@ -171,8 +171,6 @@ def build_pipes(
         pipe = Pipeline(steps=[(mod_type, mod)])
         mod = pipe
 
-    print(mod)
-
     # If scaling wanted adds the scaling
     if scale:
         if scale == "standard":
@@ -185,8 +183,6 @@ def build_pipes(
                 + scale
                 + " no scaler added to model"
             )
-
-        print(mod)
 
     # Appends the feature selection wanted
     # if wanted scaling then feature selection is second step (i.e. position 1) else first step (i.e. position 0)
@@ -232,8 +228,6 @@ def build_pipes(
                     insert_position,
                     ("feature_selection", SelectFromModel(estimator=Lasso())),
                 )
-
-    print(mod)
 
     # Adjust the params for the model to make sure have appropriate prefix
     if len(params) > 0:

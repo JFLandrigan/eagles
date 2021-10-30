@@ -364,9 +364,6 @@ class SupervisedTuner:
             )
         elif scale or select_features:
 
-            print(self.problem_type)
-            print(self.mod_type)
-
             self.mod, params = mi.build_pipes(
                 mod=self.mod,
                 params=params,
@@ -374,8 +371,6 @@ class SupervisedTuner:
                 select_features=select_features,
                 mod_type=self.mod_type,
             )
-
-            print(self.mod)
 
         # now that init the class can prob have user define these and then check in the init
         if self.tune_test:
@@ -421,6 +416,7 @@ class SupervisedTuner:
         if self.log:
             log_data = lu.build_log_data(
                 mod=self.mod,
+                mod_type=self.mod_type,
                 features=features,
                 metric_dictionary=res_dict["metric_dictionary"],
                 random_seed=self.random_seed,
