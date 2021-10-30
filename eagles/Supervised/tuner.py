@@ -363,6 +363,10 @@ class SupervisedTuner:
                 pipe=pipe,
             )
         elif scale or select_features:
+
+            print(self.problem_type)
+            print(self.mod_type)
+
             self.mod, params = mi.build_pipes(
                 mod=self.mod,
                 params=params,

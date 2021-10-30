@@ -263,26 +263,26 @@ def _unpack_voting_models(mod, mod_type, X, disp, num_top_fts):
 
             tmp_mod = c.named_steps[mod_type]
             tmp_ft_imp_df = get_feature_importances(
-                mod_type=type(c.named_steps[mod_type]).__name__,
+                mod_name=type(c.named_steps[mod_type]).__name__,
                 mod=tmp_mod,
                 features=tmp_fts,
             )
             if disp:
                 pu.plot_feature_importance(
                     ft_df=tmp_ft_imp_df,
-                    mod_type=type(c.named_steps[mod_type]).__name__,
+                    mod_name=type(c.named_steps[mod_type]).__name__,
                     num_top_fts=num_top_fts,
                     plot_title=type(c.named_steps[mod_type]).__name__
                     + " Model Importance",
                 )
         else:
             tmp_ft_imp_df = get_feature_importances(
-                mod_type=type(c).__name__, mod=c, features=list(X.columns)
+                mod_name=type(c).__name__, mod=c, features=list(X.columns)
             )
             if disp:
                 pu.plot_feature_importance(
                     ft_df=tmp_ft_imp_df,
-                    mod_type=type(c).__name__,
+                    mod_name=type(c).__name__,
                     num_top_fts=num_top_fts,
                     plot_title=type(c).__name__ + " Model Importance",
                 )
@@ -318,14 +318,14 @@ def feature_importances(mod=None, mod_type="clf", X=None, num_top_fts=None, disp
             ft_imp_df = _unpack_voting_models(tmp_mod, X[tmp_fts], disp, num_top_fts)
         else:
             ft_imp_df = get_feature_importances(
-                mod_type=type(mod.named_steps[mod_type]).__name__,
+                mod_name=type(mod.named_steps[mod_type]).__name__,
                 mod=tmp_mod,
                 features=tmp_fts,
             )
         if disp:
             pu.plot_feature_importance(
                 ft_df=ft_imp_df,
-                mod_type=type(mod.named_steps[mod_type]).__name__,
+                mod_name=type(mod.named_steps[mod_type]).__name__,
                 num_top_fts=num_top_fts,
                 plot_title=type(mod.named_steps[mod_type]).__name__
                 + " Model Importance",

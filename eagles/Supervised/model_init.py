@@ -107,8 +107,6 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
         mod = SVC(**params)
     elif model == "knn_clf":
         mod = KNeighborsClassifier(**params)
-    elif model == "nn":
-        mod = MLPClassifier(**params)
     elif model == "ada_clf":
         mod = AdaBoostClassifier(**params)
     elif model == "vc_clf":
@@ -224,10 +222,13 @@ def build_pipes(
                     ),
                 )
             elif mod_type == "rgr":
+                print("inserting the selector")
+
                 mod.steps.insert(
                     insert_position,
                     ("feature_selection", SelectFromModel(estimator=Lasso())),
                 )
+                print(mod)
 
     # Adjust the params for the model to make sure have appropriate prefix
     if params:

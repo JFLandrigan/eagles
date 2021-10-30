@@ -14,11 +14,6 @@ def load_iris():
     return pd.read_csv(file_path + "iris.csv")
 
 
-def load_boston_housing():
-    file_path = construct_path()
-    return pd.read_csv(file_path + "boston_housing.csv")
-
-
 def load_wines():
     file_path = construct_path()
     return pd.read_csv(file_path + "wines.csv")
