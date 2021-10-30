@@ -263,6 +263,11 @@ class SupervisedTuner:
                 pu.plot_confusion_matrix(cf=cf, labels=self.mod.classes_)
                 print(cr)
 
+        else:
+            # todo finish this plot
+            if self.disp:
+                _ = pu.plot_true_pred_scatter(y_true=y_test, y_pred=preds)
+
         if self.binary and self.problem_type in ["binary", "multi-class"]:
             prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
             bt, corr = tu.create_bin_table(
