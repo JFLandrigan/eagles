@@ -375,6 +375,8 @@ class SupervisedTuner:
                 mod_type=self.mod_type,
             )
 
+            print(self.mod)
+
         # now that init the class can prob have user define these and then check in the init
         if self.tune_test:
             if self.tune_metric is None:
