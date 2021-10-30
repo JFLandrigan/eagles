@@ -51,7 +51,7 @@ class SupervisedTuner:
         """[summary]
 
         Args:
-            problem_type (str, optinonal): Defaults to 'binary'. Expectes 'regress', 'binary' for binary classification or 'multi-class' for multiclass classification
+            problem_type (str, optinonal): Defaults to 'binary'. Expectes 'regress' for regression problems, 'binary' for binary classification or 'multi-class' for multiclass classification
             tune_metric (str, optional): Defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the paranmeter tuning phase. Defaults to None.
             tuner (str, optional): Indicator for type of param tuning search. Defaults to random_cv but can get grid_cv or bayes_cv as well. Defaults to None.
             eval_metrics (list, optional): [description]. Defaults to [].
