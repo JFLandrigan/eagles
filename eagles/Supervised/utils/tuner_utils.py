@@ -209,15 +209,15 @@ def create_bin_table(df=None, bins=None, bin_col=None, actual_col=None):
         return [wrt_table, corr]
 
 
-def get_feature_importances(mod_type=None, mod=None, features=None):
+def get_feature_importances(mod_name=None, mod=None, features=None):
 
     features = ["ft_" + str(ft) if isinstance(ft, int) else ft for ft in features]
 
     if (
-        ("RandomForest" in mod_type)
-        or ("GradientBoosting" in mod_type)
-        or ("DecisionTree" in mod_type)
-        or ("ExtraTrees" in mod_type)
+        ("RandomForest" in mod_name)
+        or ("GradientBoosting" in mod_name)
+        or ("DecisionTree" in mod_name)
+        or ("ExtraTrees" in mod_name)
     ):
         importance_values = mod.feature_importances_
 
@@ -231,10 +231,10 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
 
         return ftImp_df
 
-    elif ("Regression" in mod_type) or (
-        mod_type in ["Lasso", "ElasticNet", "PoissonRegressor"]
+    elif ("Regression" in mod_name) or (
+        mod_name in ["Lasso", "ElasticNet", "PoissonRegressor"]
     ):
-        if mod_type == "LogisticRegression":
+        if mod_name == "LogisticRegression":
             tmp = pd.DataFrame({"Feature": features, "Coef": mod.coef_[0]})
         else:
             tmp = pd.DataFrame({"Feature": features, "Coef": mod.coef_})
@@ -248,7 +248,7 @@ def get_feature_importances(mod_type=None, mod=None, features=None):
     return
 
 
-def _unpack_voting_models(mod, X, disp, num_top_fts):
+def _unpack_voting_models(mod, mod_type, X, disp, num_top_fts):
 
     ft_imp_df = pd.DataFrame()
 
@@ -261,18 +261,18 @@ def _unpack_voting_models(mod, X, disp, num_top_fts):
             else:
                 tmp_fts = list(X.columns)
 
-            tmp_mod = c.named_steps["clf"]
+            tmp_mod = c.named_steps[mod_type]
             tmp_ft_imp_df = get_feature_importances(
-                mod_type=type(c.named_steps["clf"]).__name__,
+                mod_type=type(c.named_steps[mod_type]).__name__,
                 mod=tmp_mod,
                 features=tmp_fts,
             )
             if disp:
                 pu.plot_feature_importance(
                     ft_df=tmp_ft_imp_df,
-                    mod_type=type(c.named_steps["clf"]).__name__,
+                    mod_type=type(c.named_steps[mod_type]).__name__,
                     num_top_fts=num_top_fts,
-                    plot_title=type(c.named_steps["clf"]).__name__
+                    plot_title=type(c.named_steps[mod_type]).__name__
                     + " Model Importance",
                 )
         else:
@@ -289,7 +289,7 @@ def _unpack_voting_models(mod, X, disp, num_top_fts):
 
         tmp_ft_imp_df.columns = ["features", "value"]
         if type(c).__name__ == "Pipeline":
-            tmp_mod_name = type(c.named_steps["clf"]).__name__
+            tmp_mod_name = type(c.named_steps[mod_type]).__name__
         else:
             tmp_mod_name = type(c).__name__
         tmp_ft_imp_df["features"] = tmp_mod_name + "_" + tmp_ft_imp_df["features"]
@@ -299,7 +299,7 @@ def _unpack_voting_models(mod, X, disp, num_top_fts):
     return ft_imp_df
 
 
-def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
+def feature_importances(mod=None, mod_type="clf", X=None, num_top_fts=None, disp=True):
 
     if type(mod).__name__ == "Pipeline":
 
@@ -309,39 +309,40 @@ def feature_importances(mod=None, X=None, num_top_fts=None, disp=True):
         else:
             tmp_fts = list(X.columns)
 
-        tmp_mod = mod.named_steps["clf"]
+        tmp_mod = mod.named_steps[mod_type]
 
-        if type(mod.named_steps["clf"]).__name__ in [
+        if type(mod.named_steps[mod_type]).__name__ in [
             "VotingClassifier",
             "VotingRegressor",
         ]:
             ft_imp_df = _unpack_voting_models(tmp_mod, X[tmp_fts], disp, num_top_fts)
         else:
             ft_imp_df = get_feature_importances(
-                mod_type=type(mod.named_steps["clf"]).__name__,
+                mod_type=type(mod.named_steps[mod_type]).__name__,
                 mod=tmp_mod,
                 features=tmp_fts,
             )
         if disp:
             pu.plot_feature_importance(
                 ft_df=ft_imp_df,
-                mod_type=type(mod.named_steps["clf"]).__name__,
+                mod_type=type(mod.named_steps[mod_type]).__name__,
                 num_top_fts=num_top_fts,
-                plot_title=type(mod.named_steps["clf"]).__name__ + " Model Importance",
+                plot_title=type(mod.named_steps[mod_type]).__name__
+                + " Model Importance",
             )
 
     elif type(mod).__name__ in ["VotingClassifier", "VotingRegressor"]:
 
-        ft_imp_df = _unpack_voting_models(mod, X, disp, num_top_fts)
+        ft_imp_df = _unpack_voting_models(mod, mod_type, X, disp, num_top_fts)
 
     else:
         ft_imp_df = get_feature_importances(
-            mod_type=type(mod).__name__, mod=mod, features=list(X.columns)
+            mod_name=type(mod).__name__, mod=mod, features=list(X.columns)
         )
         if disp:
             pu.plot_feature_importance(
                 ft_df=ft_imp_df,
-                mod_type=type(mod).__name__,
+                mod_name=type(mod).__name__,
                 num_top_fts=num_top_fts,
                 plot_title=type(mod).__name__ + " Model Importance",
             )

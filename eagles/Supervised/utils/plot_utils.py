@@ -7,24 +7,24 @@ import matplotlib.pyplot as plt
 sns.set_style("whitegrid")
 
 
-def plot_feature_importance(ft_df=None, mod_type=None, num_top_fts=None, plot_title=""):
+def plot_feature_importance(ft_df=None, mod_name=None, num_top_fts=None, plot_title=""):
     if num_top_fts:
         ft_df = ft_df.head(num_top_fts).copy(deep=True)
 
     if (
-        ("RandomForest" in mod_type)
-        or ("GradientBoosting" in mod_type)
-        or ("DecisionTree" in mod_type)
-        or ("ExtraTrees" in mod_type)
+        ("RandomForest" in mod_name)
+        or ("GradientBoosting" in mod_name)
+        or ("DecisionTree" in mod_name)
+        or ("ExtraTrees" in mod_name)
     ):
         plt.figure(figsize=(10, 10), dpi=80, facecolor="w", edgecolor="k")
         ax = sns.barplot(x="Importance", y="Feature", data=ft_df)
         ax.set_title(plot_title)
 
     elif (
-        ("Regression" in mod_type)
-        or (mod_type == "Lasso")
-        or (mod_type == "ElasticNet")
+        ("Regression" in mod_name)
+        or (mod_name == "Lasso")
+        or (mod_name == "ElasticNet")
     ):
         plt.figure(figsize=(10, 10), dpi=80, facecolor="w", edgecolor="k")
         ax = sns.barplot(x="Coef", y="Feature", data=ft_df)

@@ -75,15 +75,19 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     random_state_flag = [True if "random_state" in pr else False for pr in params]
     random_state_flag = any(random_state_flag)
 
-    if model not in [
-        "linear",
-        "svr",
-        "vc_clf",
-        "vc_regress",
-        "knn_clf",
-        "knn_regress",
-        "poisson",
-    ] and ("random_state" not in params.keys() and random_state_flag is False):
+    if (
+        model
+        not in [
+            "linear",
+            "svr",
+            "vc_clf",
+            "vc_regress",
+            "knn_clf",
+            "knn_regress",
+            "poisson",
+        ]
+        and ("random_state" not in params.keys() and random_state_flag is False)
+    ):
         if tune_test:
             params["random_state"] = [random_seed]
         else:
@@ -157,12 +161,9 @@ def build_pipes(
     scale: str = None,
     pipe=None,
     select_features: str = None,
-    problem_type: str = "clf",
+    mod_type: str = "clf",
 ):
-    if problem_type == "clf":
-        mod_type = "clf"
-    else:
-        mod_type = "rgr"
+
     # If pipeline passed in then add on the classifier
     # else init the pipeline with the model
     if pipe:
@@ -205,12 +206,12 @@ def build_pipes(
                 (
                     "feature_selection",
                     EaglesFeatureSelection(
-                        methods=["correlation", "regress"], problem_type=problem_type
+                        methods=["correlation", "regress"], problem_type=mod_type
                     ),
                 ),
             )
         elif select_features == "select_from_model":
-            if problem_type == "clf":
+            if mod_type == "clf":
                 mod.steps.insert(
                     insert_position,
                     (
@@ -222,7 +223,7 @@ def build_pipes(
                         ),
                     ),
                 )
-            elif problem_type == "regress":
+            elif mod_type == "rgr":
                 mod.steps.insert(
                     insert_position,
                     ("feature_selection", SelectFromModel(estimator=Lasso())),
@@ -230,10 +231,8 @@ def build_pipes(
 
     # Adjust the params for the model to make sure have appropriate prefix
     if params:
-        if problem_type == "clf":
-            param_prefix = "clf__"
-        else:
-            param_prefix = "rgr__"
+        param_prefix = mod_type + "__"
+
         params = {
             k if param_prefix in k else param_prefix + k: v for k, v in params.items()
         }
