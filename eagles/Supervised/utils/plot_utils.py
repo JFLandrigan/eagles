@@ -124,8 +124,18 @@ def plot_true_pred_scatter(y_true, y_pred):
     df = pd.DataFrame({"y_true": y_true, "y_pred": y_pred})
 
     fig, axs = plt.subplots(nrows=2, figsize=(12, 12))
+    # base linear plot looking at cor of pred to test
     sns.regplot(x="y_true", y="y_pred", data=df, ax=axs[0])
-    sns.kdeplot(df["y_true"], bw=0.2, label="true", color="r", ax=axs[1])
-    sns.kdeplot(df["y_pred"], bw=2, label="pred", color="b", ax=axs[1])
+
+    # distribution of true and pred predictions
+    num_values = len(df["y_true"])
+    tmp_df = pd.DataFrame(
+        {
+            "type": list(np.repeat("true", num_values))
+            + list(np.repeat("pred", num_values)),
+            "value": list(df["y_true"]) + list(df["y_pred"]),
+        }
+    )
+    _ = sns.kdeplot(tmp_df["value"], hue=tmp_df["type"], bw_method=0.2, label="true")
 
     return

@@ -182,10 +182,12 @@ class SupervisedTuner:
         print("Performing CV Runs: " + str(self.num_cv))
         kf = KFold(n_splits=self.num_cv, shuffle=True, random_state=self.random_seed)
 
-        if self.binary:
+        if self.problem_type == "binary":
             avg = "binary"
-        else:
+        elif self.problem_type == "multi-class":
             avg = "macro"
+        else:
+            avg = None
 
         metric_dictionary = mu.init_model_metrics(metrics=self.eval_metrics)
 
@@ -268,7 +270,7 @@ class SupervisedTuner:
             if self.disp:
                 _ = pu.plot_true_pred_scatter(y_true=y_test, y_pred=preds)
 
-        if self.binary and self.problem_type in ["binary", "multi-class"]:
+        if self.problem_type == "binary":
             prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
             bt, corr = tu.create_bin_table(
                 df=prob_df, bins=self.bins, bin_col="probab", actual_col="actual"

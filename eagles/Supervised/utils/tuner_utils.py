@@ -315,7 +315,13 @@ def feature_importances(mod=None, mod_type="clf", X=None, num_top_fts=None, disp
             "VotingClassifier",
             "VotingRegressor",
         ]:
-            ft_imp_df = _unpack_voting_models(tmp_mod, X[tmp_fts], disp, num_top_fts)
+            ft_imp_df = _unpack_voting_models(
+                mod=tmp_mod,
+                mod_type=mod_type,
+                X=X[tmp_fts],
+                disp=disp,
+                num_top_fts=num_top_fts,
+            )
         else:
             ft_imp_df = get_feature_importances(
                 mod_name=type(mod.named_steps[mod_type]).__name__,
@@ -333,7 +339,9 @@ def feature_importances(mod=None, mod_type="clf", X=None, num_top_fts=None, disp
 
     elif type(mod).__name__ in ["VotingClassifier", "VotingRegressor"]:
 
-        ft_imp_df = _unpack_voting_models(mod, mod_type, X, disp, num_top_fts)
+        ft_imp_df = _unpack_voting_models(
+            mod=mod, mod_type=mod_type, X=X, disp=disp, num_top_fts=num_top_fts
+        )
 
     else:
         ft_imp_df = get_feature_importances(
