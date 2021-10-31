@@ -31,6 +31,7 @@ class SupervisedTuner:
     # should set defaults like tuner = 'random_cv'
     def __init__(
         self,
+        problem_type: str = "binary",
         tune_metric: str = None,
         tuner: str = None,
         eval_metrics: list = [],
@@ -41,7 +42,6 @@ class SupervisedTuner:
         get_ft_imp: bool = True,
         n_jobs: int = 1,
         random_seed: int = None,
-        binary: bool = True,
         disp: bool = True,
         log: str or list = None,
         log_name: str = None,
@@ -51,6 +51,7 @@ class SupervisedTuner:
         """[summary]
 
         Args:
+            problem_type (str, optinonal): Defaults to 'binary'. Expectes 'regress' for regression problems, 'binary' for binary classification or 'multi-class' for multiclass classification
             tune_metric (str, optional): Defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the paranmeter tuning phase. Defaults to None.
             tuner (str, optional): Indicator for type of param tuning search. Defaults to random_cv but can get grid_cv or bayes_cv as well. Defaults to None.
             eval_metrics (list, optional): [description]. Defaults to [].
@@ -61,7 +62,6 @@ class SupervisedTuner:
             get_ft_imp (bool, optional): Boolean indicator for whether or not to include feature importance. Defaults to True.
             n_jobs (int, optional): Number of parrallel jobs to run. Defaults to 1.
             random_seed (int, optional): Random seed setting. If none a random seed is set using numpy random. Defaults to None.
-            binary (bool, optional): If classification model bool indicator for whether or not binary classification. Defaults to True.
             disp (bool, optional): Boolean indicator to display results of evaluation or not. Defaults to True.
             log (strorlist, optional): Expects "log" or list with one of following "log", "mod", "data". Defaults to None.
             log_name (str, optional): Name of log file. Defaults to None.
@@ -69,6 +69,7 @@ class SupervisedTuner:
             log_note (str, optional): Model evaluation note to store in log. Defaults to None.
         """
 
+        self.problem_type = problem_type
         self.tune_metric = tune_metric
         self.eval_metrics = eval_metrics
         self.num_cv = num_cv
@@ -79,7 +80,7 @@ class SupervisedTuner:
         self.get_ft_imp = get_ft_imp
         self.n_jobs = n_jobs
         self.random_seed = random_seed
-        self.binary = binary
+        self.binary = None
         self.disp = disp
         self.log = log
         self.log_name = log_name
@@ -88,12 +89,23 @@ class SupervisedTuner:
         self.X = None
         self.y = None
         self.mod = None
+        self.mod_type = None
         self.params = None
 
         # init random seed
         if self.random_seed is None:
             self.random_seed = np.random.randint(1000, size=1)[0]
             print("Random Seed Value: " + str(random_seed))
+
+        if self.problem_type in ["binary", "multi-class"]:
+            self.mod_type = "clf"
+        else:
+            self.mod_type = "rgr"
+
+        if self.problem_type == "binary":
+            self.binary = True
+        else:
+            self.binary = False
 
         # TODO check if tuner is supported or not and then do this ********************
         if self.tuner is None:
@@ -170,10 +182,12 @@ class SupervisedTuner:
         print("Performing CV Runs: " + str(self.num_cv))
         kf = KFold(n_splits=self.num_cv, shuffle=True, random_state=self.random_seed)
 
-        if self.binary:
+        if self.problem_type == "binary":
             avg = "binary"
-        else:
+        elif self.problem_type == "multi-class":
             avg = "macro"
+        else:
+            avg = None
 
         metric_dictionary = mu.init_model_metrics(metrics=self.eval_metrics)
 
@@ -190,7 +204,7 @@ class SupervisedTuner:
             self.mod.fit(X_train, y_train)
             preds = self.mod.predict(X_test)
 
-            if self.problem_type == "clf":
+            if self.problem_type in ["binary", "multi-class"]:
                 pred_probs = self.mod.predict_proba(X_test)[:, 1]
             else:
                 pred_probs = []
@@ -237,7 +251,7 @@ class SupervisedTuner:
             )
 
         # TODO ADD in res_dict cr, cf, bt and ftimpdf
-        if self.problem_type == "clf":
+        if self.problem_type in ["binary", "multi-class"]:
             print(" \n")
             cf = confusion_matrix(y_test, preds)
             cr = classification_report(
@@ -251,7 +265,12 @@ class SupervisedTuner:
                 pu.plot_confusion_matrix(cf=cf, labels=self.mod.classes_)
                 print(cr)
 
-        if self.binary and self.problem_type == "clf":
+        else:
+            # todo finish this plot
+            if self.disp:
+                _ = pu.plot_true_pred_scatter(y_true=y_test, y_pred=preds)
+
+        if self.problem_type == "binary":
             prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
             bt, corr = tu.create_bin_table(
                 df=prob_df, bins=self.bins, bin_col="probab", actual_col="actual"
@@ -273,7 +292,11 @@ class SupervisedTuner:
 
         if self.get_ft_imp:
             ft_imp_df = tu.feature_importances(
-                mod=self.mod, X=self.X, num_top_fts=self.num_top_fts, disp=self.disp
+                mod=self.mod,
+                mod_type=self.mod_type,
+                X=self.X,
+                num_top_fts=self.num_top_fts,
+                disp=self.disp,
             )
             res_dict["ft_imp_df"] = ft_imp_df
 
@@ -293,24 +316,26 @@ class SupervisedTuner:
         select_features: str = None,
     ) -> dict:
         """
-        Function to run the model tuning and evaluation. 
+        Function to run the model tuning and evaluation.
         Args:
             X (pd.DataFrame, optional): Pandas dataframe only containing features to be modelled. Defaults to None.
             y (pd.Series, optional): Pandas series containing output for model to predict. Defaults to None.
             model ([str or sklearn compatible model object]: String name of model evaluating (see model support) or sklearn compatible model . Defaults to None.
             params (dict, optional): Dictionary containing key value pairs for parameters of model. Note for tuning values should be in list. Defaults to None.
             pipe ([type], optional): Sklearn compatible pipeline object. Defaults to None.
-            scale ([str], optional): Standard or MinMax indicating to scale the features during cross validation. Defaults to None.
+            scale ([str], optional): standard, minmax, robust indicating to scale the features during cross validation. Defaults to None.
             select_features ([str], optional): The expected can be set to "eagles" (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop).. Defaults to None.
 
         Returns:
-            dict: Dictionary containing results from tuning including model object, tuning metrics, parameter, features and others. 
+            dict: Dictionary containing results from tuning including model object, tuning metrics, parameter, features and others.
         """
 
         # check data format
         self.X = X
         self.y = y
         self._check_data()
+
+        num_features = X.shape[1]
 
         if self.tune_test:
             print(f"Performing parameter tuning using: {self.tuner}")
@@ -330,7 +355,6 @@ class SupervisedTuner:
             tune_test=self.tune_test,
         )
 
-        self.problem_type = mi.define_problem_type(self.mod)
         if self.problem_type is None:
             logger.warning("Could not detect problem type exiting")
             return
@@ -342,26 +366,35 @@ class SupervisedTuner:
             return
 
         if pipe:
-            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe,)
+            self.mod, params = mi.build_pipes(
+                mod=self.mod,
+                params=params,
+                pipe=pipe,
+            )
         elif scale or select_features:
+
             self.mod, params = mi.build_pipes(
                 mod=self.mod,
                 params=params,
                 scale=scale,
                 select_features=select_features,
-                problem_type=self.problem_type,
+                mod_type=self.mod_type,
+                num_features=num_features,
             )
 
         # now that init the class can prob have user define these and then check in the init
         if self.tune_test:
             if self.tune_metric is None:
-                if self.problem_type == "clf":
+                if self.problem_type in ["binary", "multi-class"]:
                     self.tune_metric = "f1"
                 else:
                     self.tune_metric = "neg_mean_squared_error"
 
         # ensure that eval metrics have been defined
-        if len(self.eval_metrics) == 0 and self.problem_type == "clf":
+        if len(self.eval_metrics) == 0 and self.problem_type in [
+            "binary",
+            "multi-class",
+        ]:
             self.eval_metrics = ["f1"]
         elif len(self.eval_metrics) == 0 and self.problem_type == "regress":
             self.eval_metrics = ["mse"]
@@ -393,6 +426,7 @@ class SupervisedTuner:
         if self.log:
             log_data = lu.build_log_data(
                 mod=self.mod,
+                mod_type=self.mod_type,
                 features=features,
                 metric_dictionary=res_dict["metric_dictionary"],
                 random_seed=self.random_seed,

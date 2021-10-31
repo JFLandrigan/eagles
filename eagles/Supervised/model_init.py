@@ -1,6 +1,6 @@
 from eagles.Supervised import config
 from eagles.Supervised.utils.feature_selection import EaglesFeatureSelection
-from sklearn.feature_selection import SelectFromModel
+from sklearn.feature_selection import SelectFromModel, SelectKBest
 from sklearn.ensemble import (
     RandomForestClassifier,
     ExtraTreesClassifier,
@@ -23,11 +23,12 @@ from sklearn.linear_model import (
     PoissonRegressor,
 )
 from sklearn.svm import SVC, SVR
-from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
+
+from xgboost import XGBRegressor, XGBClassifier
 
 import numpy as np
 
@@ -37,33 +38,33 @@ import warnings
 logger = logging.getLogger(__name__)
 
 
-def define_problem_type(mod=None, y=None):
+# def define_problem_type(mod=None, y=None):
 
-    problem_type = None
+#     problem_type = None
 
-    if type(mod).__name__ in config.clf_models:
-        problem_type = "clf"
-    elif type(mod).__name__ in config.regress_models:
-        problem_type = "regress"
-    elif type(mod).__name__ == "Pipeline":
-        if type(mod.named_steps["clf"]).__name__ in config.clf_models:
-            problem_type = "clf"
-        elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
-            problem_type = "regress"
-        elif "Classifier" in type(mod).__name__:
-            problem_type = "clf"
-        elif "Regressor" in type(mod).__name__:
-            problem_type = "regress"
-    elif "Classifier" in type(mod).__name__:
-        problem_type = "clf"
-    elif "Regressor" in type(mod).__name__:
-        problem_type = "regress"
+#     if type(mod).__name__ in config.clf_models:
+#         problem_type = "clf"
+#     elif type(mod).__name__ in config.regress_models:
+#         problem_type = "regress"
+#     elif type(mod).__name__ == "Pipeline":
+#         if type(mod.named_steps["clf"]).__name__ in config.clf_models:
+#             problem_type = "clf"
+#         elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
+#             problem_type = "regress"
+#         elif "Classifier" in type(mod).__name__:
+#             problem_type = "clf"
+#         elif "Regressor" in type(mod).__name__:
+#             problem_type = "regress"
+#     elif "Classifier" in type(mod).__name__:
+#         problem_type = "clf"
+#     elif "Regressor" in type(mod).__name__:
+#         problem_type = "regress"
 
-    if problem_type is None:
-        if len(np.unique(y)) == 2:
-            problem_type = "clf"
+#     if problem_type is None:
+#         if len(np.unique(y)) == 2:
+#             problem_type = "clf"
 
-    return problem_type
+#     return problem_type
 
 
 def init_model(model=None, params={}, random_seed=None, tune_test=False):
@@ -75,15 +76,19 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     random_state_flag = [True if "random_state" in pr else False for pr in params]
     random_state_flag = any(random_state_flag)
 
-    if model not in [
-        "linear",
-        "svr",
-        "vc_clf",
-        "vc_regress",
-        "knn_clf",
-        "knn_regress",
-        "poisson",
-    ] and ("random_state" not in params.keys() and random_state_flag is False):
+    if (
+        model
+        not in [
+            "linear",
+            "svr",
+            "vc_clf",
+            "vc_regress",
+            "knn_clf",
+            "knn_regress",
+            "poisson",
+        ]
+        and ("random_state" not in params.keys() and random_state_flag is False)
+    ):
         if tune_test:
             params["random_state"] = [random_seed]
         else:
@@ -103,17 +108,17 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
         mod = SVC(**params)
     elif model == "knn_clf":
         mod = KNeighborsClassifier(**params)
-    elif model == "nn":
-        mod = MLPClassifier(**params)
     elif model == "ada_clf":
         mod = AdaBoostClassifier(**params)
     elif model == "vc_clf":
         if "estimators" not in params.keys():
             params["estimators"] = [
-                ("rf", RandomForestClassifier(random_state=params["random_state"])),
-                ("lr", LogisticRegression(random_state=params["random_state"])),
+                ("rf", RandomForestClassifier()),
+                ("lr", LogisticRegression()),
             ]
         mod = VotingClassifier(**params)
+    elif model == "xgb_clf":
+        mod = XGBClassifier(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
     elif model == "et_regress":
@@ -141,10 +146,12 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     elif model == "vc_regress":
         if "estimators" not in params.keys():
             params["estimators"] = [
-                ("rf", RandomForestRegressor(random_state=params["random_state"])),
+                ("rf", RandomForestRegressor()),
                 ("linear", LinearRegression()),
             ]
         mod = VotingRegressor(**params)
+    elif model == "xgb_regress":
+        mod = XGBRegressor(**params)
     else:
         mod = model
 
@@ -157,12 +164,10 @@ def build_pipes(
     scale: str = None,
     pipe=None,
     select_features: str = None,
-    problem_type: str = "clf",
+    mod_type: str = "clf",
+    num_features: int = None,
 ):
-    if problem_type == "clf":
-        mod_type = "clf"
-    else:
-        mod_type = "rgr"
+
     # If pipeline passed in then add on the classifier
     # else init the pipeline with the model
     if pipe:
@@ -178,6 +183,8 @@ def build_pipes(
             mod.steps.insert(0, ("scale", StandardScaler()))
         elif scale == "minmax":
             mod.steps.insert(0, ("scale", MinMaxScaler()))
+        elif scale == "robust":
+            mod.steps.insert(0, ("scale", RobustScaler()))
         else:
             warnings.warn(
                 "scaler not supported expects standard or minmax got: "
@@ -193,7 +200,7 @@ def build_pipes(
         insert_position = 0
 
     if select_features:
-        if select_features not in ["eagles", "select_from_model"]:
+        if select_features not in ["eagles", "select_from_model", "selectkbest"]:
             warnings.warn(
                 "select_features not supported expects eagles or select_from_model got: "
                 + str(select_features)
@@ -205,12 +212,12 @@ def build_pipes(
                 (
                     "feature_selection",
                     EaglesFeatureSelection(
-                        methods=["correlation", "regress"], problem_type=problem_type
+                        methods=["correlation", "regress"], problem_type=mod_type
                     ),
                 ),
             )
         elif select_features == "select_from_model":
-            if problem_type == "clf":
+            if mod_type == "clf":
                 mod.steps.insert(
                     insert_position,
                     (
@@ -222,21 +229,35 @@ def build_pipes(
                         ),
                     ),
                 )
-            elif problem_type == "regress":
+            elif mod_type == "rgr":
                 mod.steps.insert(
                     insert_position,
-                    ("feature_selection", SelectFromModel(estimator=Lasso())),
+                    (
+                        "feature_selection",
+                        SelectFromModel(estimator=Lasso()),
+                    ),
                 )
+        elif select_features == "selectkbest":
+            if num_features < 10:
+                k = np.ceil(num_features / 2).astype(int)
+            else:
+                k = 10
+
+            mod.steps.insert(
+                insert_position,
+                (
+                    "feature_selection",
+                    SelectKBest(k=k),
+                ),
+            )
 
     # Adjust the params for the model to make sure have appropriate prefix
-    if params:
-        if problem_type == "clf":
-            param_prefix = "clf__"
-        else:
-            param_prefix = "rgr__"
+    if len(params) > 0:
+        param_prefix = mod_type + "__"
+
         params = {
             k if param_prefix in k else param_prefix + k: v for k, v in params.items()
         }
         return [mod, params]
     else:
-        return mod
+        return [mod, params]

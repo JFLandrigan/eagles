@@ -49,6 +49,7 @@ def construct_save_path(fl_path=None, fl_name=None, model_name=None, save_dir=Fa
 
 def build_log_data(
     mod,
+    mod_type,
     features,
     metric_dictionary,
     random_seed,
@@ -70,8 +71,8 @@ def build_log_data(
     if type(mod).__name__ == "Pipeline":
         log_data["params"].append(
             [
-                type(mod.named_steps["clf"]).__name__,
-                str(mod.named_steps["clf"].get_params()),
+                type(mod.named_steps[mod_type]).__name__,
+                str(mod.named_steps[mod_type].get_params()),
             ]
         )
 
@@ -83,8 +84,8 @@ def build_log_data(
             if type(c).__name__ == "Pipeline":
                 log_data["params"].append(
                     [
-                        type(c.named_steps["clf"]).__name__,
-                        str(c.named_steps["clf"].get_params()),
+                        type(c.named_steps[mod_type]).__name__,
+                        str(c.named_steps[mod_type].get_params()),
                     ]
                 )
             else:

@@ -38,13 +38,14 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "logistic" : LogisticRegression       | "linear" : LinearRegression              |
 | "svc" : SVC                           | "lasso" : Lasso                          |
 | "knn_clf" : KNeighborsClassifier      | "ridge":Ridge                            |
-| "nn" : MLPClassifier                  | "elastic" : ElasticNet                   |
-| "ada_clf" : AdaBoostClassifier        | "poisson":PoissonRegressor               |
-| "et_clf": ExtraTreesClassifier        | "svr" : SVR                              |
-| "vc_clf"  :VotingClassifier           | "knn_regress" : KNeighborsRegressor      |
+| "ada_clf" : AdaBoostClassifier        | "elastic" : ElasticNet                   |
+| "et_clf": ExtraTreesClassifier        | "poisson":PoissonRegressor               |
+| "vc_clf"  :VotingClassifier           | "svr" : SVR                              |
+| "xgb_clf" : XGBClassifier             | "knn_regress" : KNeighborsRegressor      |
 |                                       | "ada_regress" : AdaBoostRegressor        |
 |                                       | "et_regress": ExtraTreesRegressor        |
 |                                       | "vc_regress" : VotingRegressor           |
+|                                       | "xgb_regress": XGBRegressor
 
 Defaults:
 
