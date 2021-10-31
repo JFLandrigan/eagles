@@ -1,6 +1,6 @@
 from eagles.Supervised import config
 from eagles.Supervised.utils.feature_selection import EaglesFeatureSelection
-from sklearn.feature_selection import SelectFromModel
+from sklearn.feature_selection import SelectFromModel, SelectKBest
 from sklearn.ensemble import (
     RandomForestClassifier,
     ExtraTreesClassifier,
@@ -159,6 +159,7 @@ def build_pipes(
     pipe=None,
     select_features: str = None,
     mod_type: str = "clf",
+    num_features: int = None,
 ):
 
     # If pipeline passed in then add on the classifier
@@ -193,7 +194,7 @@ def build_pipes(
         insert_position = 0
 
     if select_features:
-        if select_features not in ["eagles", "select_from_model"]:
+        if select_features not in ["eagles", "select_from_model", "selectkbest"]:
             warnings.warn(
                 "select_features not supported expects eagles or select_from_model got: "
                 + str(select_features)
@@ -230,6 +231,19 @@ def build_pipes(
                         SelectFromModel(estimator=Lasso()),
                     ),
                 )
+        elif select_features == "selectkbest":
+            if num_features < 10:
+                k = np.ceil(num_features / 2).astype(int)
+            else:
+                k = 10
+
+            mod.steps.insert(
+                insert_position,
+                (
+                    "feature_selection",
+                    SelectKBest(k=k),
+                ),
+            )
 
     # Adjust the params for the model to make sure have appropriate prefix
     if len(params) > 0:

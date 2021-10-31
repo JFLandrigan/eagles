@@ -335,6 +335,8 @@ class SupervisedTuner:
         self.y = y
         self._check_data()
 
+        num_features = X.shape[1]
+
         if self.tune_test:
             print(f"Performing parameter tuning using: {self.tuner}")
             test_params = params.copy()
@@ -377,6 +379,7 @@ class SupervisedTuner:
                 scale=scale,
                 select_features=select_features,
                 mod_type=self.mod_type,
+                num_features=num_features,
             )
 
         # now that init the class can prob have user define these and then check in the init
