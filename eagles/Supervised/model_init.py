@@ -23,10 +23,9 @@ from sklearn.linear_model import (
     PoissonRegressor,
 )
 from sklearn.svm import SVC, SVR
-from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 
 import numpy as np
@@ -37,33 +36,33 @@ import warnings
 logger = logging.getLogger(__name__)
 
 
-def define_problem_type(mod=None, y=None):
+# def define_problem_type(mod=None, y=None):
 
-    problem_type = None
+#     problem_type = None
 
-    if type(mod).__name__ in config.clf_models:
-        problem_type = "clf"
-    elif type(mod).__name__ in config.regress_models:
-        problem_type = "regress"
-    elif type(mod).__name__ == "Pipeline":
-        if type(mod.named_steps["clf"]).__name__ in config.clf_models:
-            problem_type = "clf"
-        elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
-            problem_type = "regress"
-        elif "Classifier" in type(mod).__name__:
-            problem_type = "clf"
-        elif "Regressor" in type(mod).__name__:
-            problem_type = "regress"
-    elif "Classifier" in type(mod).__name__:
-        problem_type = "clf"
-    elif "Regressor" in type(mod).__name__:
-        problem_type = "regress"
+#     if type(mod).__name__ in config.clf_models:
+#         problem_type = "clf"
+#     elif type(mod).__name__ in config.regress_models:
+#         problem_type = "regress"
+#     elif type(mod).__name__ == "Pipeline":
+#         if type(mod.named_steps["clf"]).__name__ in config.clf_models:
+#             problem_type = "clf"
+#         elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
+#             problem_type = "regress"
+#         elif "Classifier" in type(mod).__name__:
+#             problem_type = "clf"
+#         elif "Regressor" in type(mod).__name__:
+#             problem_type = "regress"
+#     elif "Classifier" in type(mod).__name__:
+#         problem_type = "clf"
+#     elif "Regressor" in type(mod).__name__:
+#         problem_type = "regress"
 
-    if problem_type is None:
-        if len(np.unique(y)) == 2:
-            problem_type = "clf"
+#     if problem_type is None:
+#         if len(np.unique(y)) == 2:
+#             problem_type = "clf"
 
-    return problem_type
+#     return problem_type
 
 
 def init_model(model=None, params={}, random_seed=None, tune_test=False):
@@ -112,8 +111,8 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     elif model == "vc_clf":
         if "estimators" not in params.keys():
             params["estimators"] = [
-                ("rf", RandomForestClassifier(random_state=params["random_state"])),
-                ("lr", LogisticRegression(random_state=params["random_state"])),
+                ("rf", RandomForestClassifier()),
+                ("lr", LogisticRegression()),
             ]
         mod = VotingClassifier(**params)
     elif model == "rf_regress":
@@ -143,7 +142,7 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     elif model == "vc_regress":
         if "estimators" not in params.keys():
             params["estimators"] = [
-                ("rf", RandomForestRegressor(random_state=params["random_state"])),
+                ("rf", RandomForestRegressor()),
                 ("linear", LinearRegression()),
             ]
         mod = VotingRegressor(**params)
@@ -177,6 +176,8 @@ def build_pipes(
             mod.steps.insert(0, ("scale", StandardScaler()))
         elif scale == "minmax":
             mod.steps.insert(0, ("scale", MinMaxScaler()))
+        elif scale == "robust":
+            mod.steps.insert(0, ("scale", RobustScaler()))
         else:
             warnings.warn(
                 "scaler not supported expects standard or minmax got: "
@@ -222,11 +223,12 @@ def build_pipes(
                     ),
                 )
             elif mod_type == "rgr":
-                print("inserting the selector")
-
                 mod.steps.insert(
                     insert_position,
-                    ("feature_selection", SelectFromModel(estimator=Lasso())),
+                    (
+                        "feature_selection",
+                        SelectFromModel(estimator=Lasso()),
+                    ),
                 )
 
     # Adjust the params for the model to make sure have appropriate prefix
