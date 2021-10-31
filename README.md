@@ -45,7 +45,7 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "xgb_clf" : XGBClassifier             | "ada_regress" : AdaBoostRegressor        |
 |                                       | "et_regress": ExtraTreesRegressor        |
 |                                       | "vc_regress" : VotingRegressor           |
-|                                       |"xgb_regress": XGBRegressor
+|                                       | "xgb_regress": XGBRegressor
 
 Defaults:
 
