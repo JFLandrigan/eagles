@@ -28,6 +28,8 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 
+from xgboost import XGBRegressor, XGBClassifier
+
 import numpy as np
 
 import logging
@@ -115,6 +117,8 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
                 ("lr", LogisticRegression()),
             ]
         mod = VotingClassifier(**params)
+    elif model == "xgb_clf":
+        mod = XGBClassifier(**params)
     elif model == "rf_regress":
         mod = RandomForestRegressor(**params)
     elif model == "et_regress":
@@ -146,6 +150,8 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
                 ("linear", LinearRegression()),
             ]
         mod = VotingRegressor(**params)
+    elif model == "xgb_regress":
+        mod = XGBRegressor(**params)
     else:
         mod = model
 

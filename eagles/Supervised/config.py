@@ -9,6 +9,7 @@ clf_model_abbreviations = [
     "nn",
     "ada_clf",
     "vc_clf",
+    "xgb_clf",
 ]
 
 clf_models = [
@@ -22,6 +23,7 @@ clf_models = [
     "MLPClassifier",
     "AdaBoostClassifier",
     "VotingClassifier",
+    "XGBClassifier",
 ]
 
 clf_metrics = [
@@ -47,6 +49,7 @@ regress_model_abbreviations = [
     "knn_regress",
     "ada_regress",
     "vc_regress",
+    "xgb_regress",
 ]
 
 regress_models = [
@@ -63,6 +66,7 @@ regress_models = [
     "KNeighborsRegressor",
     "AdaBoostRegressor",
     "VotingRegressor",
+    "XGBRegressor",
 ]
 
 regress_metrics = ["mse", "rmse", "mae", "mape", "r2"]

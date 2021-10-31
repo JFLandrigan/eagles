@@ -42,9 +42,10 @@ Note that the functions primarily support sklearn model objects however if a mod
 | "ada_clf" : AdaBoostClassifier        | "poisson":PoissonRegressor               |
 | "et_clf": ExtraTreesClassifier        | "svr" : SVR                              |
 | "vc_clf"  :VotingClassifier           | "knn_regress" : KNeighborsRegressor      |
-|                                       | "ada_regress" : AdaBoostRegressor        |
+| "xgb_clf" : XGBClassifier             | "ada_regress" : AdaBoostRegressor        |
 |                                       | "et_regress": ExtraTreesRegressor        |
 |                                       | "vc_regress" : VotingRegressor           |
+|                                       |"xgb_regress": XGBRegressor
 
 Defaults:
 
