@@ -35,6 +35,7 @@ class SupervisedTuner:
         tune_metric: str = None,
         tuner: str = None,
         eval_metrics: list = [],
+        cv_method: str = "kfold",
         num_cv: int = 5,
         bins: list = None,
         num_top_fts: int = None,
@@ -55,6 +56,7 @@ class SupervisedTuner:
             tune_metric (str, optional): Defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the paranmeter tuning phase. Defaults to None.
             tuner (str, optional): Indicator for type of param tuning search. Defaults to random_cv but can get grid_cv or bayes_cv as well. Defaults to None.
             eval_metrics (list, optional): [description]. Defaults to [].
+            cv_method (str, optional) : Method for performing cross validation. Expects kfold, time or stratified_k
             num_cv (int, optional): Number of cross validation iterations to be performed. Defaults to 5.
             bins (list, optional): For binary classification problems determines the number of granularity of the probability bins used in the distribution by percent actual output. Defaults to None.
             num_top_fts (int, optional): Number of most important features to include in output of eval. If none prints all importance values. Defaults to None.
@@ -72,6 +74,7 @@ class SupervisedTuner:
         self.problem_type = problem_type
         self.tune_metric = tune_metric
         self.eval_metrics = eval_metrics
+        self.cv_method = cv_method
         self.num_cv = num_cv
         self.bins = bins
         self.num_top_fts = num_top_fts
@@ -112,6 +115,11 @@ class SupervisedTuner:
             self.tune_test = False
         else:
             self.tune_test = True
+
+        # set the cross validation splitter
+        self.cv_splitter = mi.init_cv_splitter(
+            cv_method=self.cv_method, num_cv=self.num_cv, random_seed=self.random_seed
+        )
 
         return
 
@@ -161,7 +169,8 @@ class SupervisedTuner:
                 self.mod,
                 param_grid=params,
                 scoring=self.tune_metric,
-                cv=self.num_cv,
+                # cv=self.num_cv,
+                cv=self.cv_splitter,
                 refit=True,
                 n_jobs=self.n_jobs,
                 verbose=1,

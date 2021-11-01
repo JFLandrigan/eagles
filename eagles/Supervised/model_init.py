@@ -27,6 +27,7 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
 
 from xgboost import XGBRegressor, XGBClassifier
 
@@ -65,6 +66,19 @@ logger = logging.getLogger(__name__)
 #             problem_type = "clf"
 
 #     return problem_type
+
+
+def init_cv_splitter(cv_method=None, num_cv: int = 5, random_seed: int = None):
+    if type(cv_method) == str:
+        if cv_method == "kfold":
+            splitter = KFold(n_splits=num_cv, shuffle=True, random_state=random_seed)
+        elif cv_method == "time":
+            splitter = TimeSeriesSplit(n_splits=num_cv)
+        elif cv_method == "stratified_k":
+            splitter = StratifiedKFold(n_splits=num_cv, random_state=random_seed)
+    else:
+        splitter = cv_method
+    return splitter
 
 
 def init_model(model=None, params={}, random_seed=None, tune_test=False):
