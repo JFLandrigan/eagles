@@ -1,6 +1,6 @@
 # for lime use https://github.com/marcotcr/lime
 
-from eagles.Supervised import model_init as mi
+from eagles.Supervised import model_init as mi, config
 from eagles.Supervised.utils import (
     tuner_utils as tu,
     _print_utils,
@@ -121,6 +121,9 @@ class SupervisedTuner:
             cv_method=self.cv_method, num_cv=self.num_cv, random_seed=self.random_seed
         )
 
+        if tuner and problem_type == "regress":
+            self.tune_metric = config.regress_metric_key[self.tune_metric]
+
         return
 
     def _check_data(self) -> None:
@@ -145,7 +148,7 @@ class SupervisedTuner:
                 param_distributions=params,
                 n_iter=self.n_iterations,
                 scoring=self.tune_metric,
-                cv=self.num_cv,
+                cv=self.cv_splitter,
                 refit=True,
                 n_jobs=self.n_jobs,
                 verbose=2,
@@ -158,7 +161,7 @@ class SupervisedTuner:
                 search_spaces=params,
                 scoring=self.tune_metric,
                 n_iter=self.n_iterations,
-                cv=self.num_cv,
+                cv=self.cv_splitter,
                 verbose=2,
                 refit=True,
                 n_jobs=self.n_jobs,
@@ -169,7 +172,6 @@ class SupervisedTuner:
                 self.mod,
                 param_grid=params,
                 scoring=self.tune_metric,
-                # cv=self.num_cv,
                 cv=self.cv_splitter,
                 refit=True,
                 n_jobs=self.n_jobs,
@@ -189,7 +191,7 @@ class SupervisedTuner:
 
     def model_eval(self):
         print("Performing CV Runs: " + str(self.num_cv))
-        kf = KFold(n_splits=self.num_cv, shuffle=True, random_state=self.random_seed)
+        kf = self.cv_splitter
 
         if self.problem_type == "binary":
             avg = "binary"
@@ -375,11 +377,7 @@ class SupervisedTuner:
             return
 
         if pipe:
-            self.mod, params = mi.build_pipes(
-                mod=self.mod,
-                params=params,
-                pipe=pipe,
-            )
+            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe,)
         elif scale or select_features:
 
             self.mod, params = mi.build_pipes(
@@ -413,7 +411,9 @@ class SupervisedTuner:
             scv = self._tune_model_params(params=params)
             self.mod = scv.best_estimator_
             self.params = self.mod.get_params()
-            _ = _print_utils._print_param_tuning_results(mod=self.mod, X=self.X)
+            _ = _print_utils._print_param_tuning_results(
+                mod=self.mod, mod_type=self.mod_type, X=self.X
+            )
 
         # perform the model eval
         res_dict = self.model_eval()

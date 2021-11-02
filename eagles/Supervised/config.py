@@ -70,3 +70,9 @@ regress_models = [
 ]
 
 regress_metrics = ["mse", "rmse", "mae", "mape", "r2"]
+
+regress_metric_key = {
+    "mse": "neg_mean_squared_error",
+    "mae": "neg_mean_absolute_error",
+    "r2": "‘r2’",
+}
