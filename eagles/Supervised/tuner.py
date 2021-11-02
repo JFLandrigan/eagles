@@ -18,7 +18,6 @@ from IPython.display import display
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
 
-from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
 import warnings
@@ -323,6 +322,7 @@ class SupervisedTuner:
         model=None,
         params: dict = None,
         pipe=None,
+        imputer: str = None,
         scale: str = None,
         select_features: str = None,
     ) -> dict:

@@ -25,6 +25,7 @@ from sklearn.linear_model import (
 from sklearn.svm import SVC, SVR
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
+from sklearn.impute import SimpleImputer, MissingIndicator, IterativeImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
@@ -37,35 +38,6 @@ import logging
 import warnings
 
 logger = logging.getLogger(__name__)
-
-
-# def define_problem_type(mod=None, y=None):
-
-#     problem_type = None
-
-#     if type(mod).__name__ in config.clf_models:
-#         problem_type = "clf"
-#     elif type(mod).__name__ in config.regress_models:
-#         problem_type = "regress"
-#     elif type(mod).__name__ == "Pipeline":
-#         if type(mod.named_steps["clf"]).__name__ in config.clf_models:
-#             problem_type = "clf"
-#         elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
-#             problem_type = "regress"
-#         elif "Classifier" in type(mod).__name__:
-#             problem_type = "clf"
-#         elif "Regressor" in type(mod).__name__:
-#             problem_type = "regress"
-#     elif "Classifier" in type(mod).__name__:
-#         problem_type = "clf"
-#     elif "Regressor" in type(mod).__name__:
-#         problem_type = "regress"
-
-#     if problem_type is None:
-#         if len(np.unique(y)) == 2:
-#             problem_type = "clf"
-
-#     return problem_type
 
 
 def init_cv_splitter(cv_method=None, num_cv: int = 5, random_seed: int = None):
@@ -90,19 +62,15 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     random_state_flag = [True if "random_state" in pr else False for pr in params]
     random_state_flag = any(random_state_flag)
 
-    if (
-        model
-        not in [
-            "linear",
-            "svr",
-            "vc_clf",
-            "vc_regress",
-            "knn_clf",
-            "knn_regress",
-            "poisson",
-        ]
-        and ("random_state" not in params.keys() and random_state_flag is False)
-    ):
+    if model not in [
+        "linear",
+        "svr",
+        "vc_clf",
+        "vc_regress",
+        "knn_clf",
+        "knn_regress",
+        "poisson",
+    ] and ("random_state" not in params.keys() and random_state_flag is False):
         if tune_test:
             params["random_state"] = [random_seed]
         else:
@@ -175,6 +143,7 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
 def build_pipes(
     mod=None,
     params: dict = None,
+    imputer: str = None,
     scale: str = None,
     pipe=None,
     select_features: str = None,
@@ -191,14 +160,32 @@ def build_pipes(
         pipe = Pipeline(steps=[(mod_type, mod)])
         mod = pipe
 
+    # inserts imputation method into the first position in the pipe
+    if imputer:
+        if "simple" in imputer:
+            mod.steps.insert(
+                0, ("impute", SimpleImputer(strategy=imputer.split("_")[1]))
+            )
+        elif imputer == "missing_indicator":
+            mod.steps.insert(0, ("impute", MissingIndicator()))
+        elif imputer == "iterative":
+            mod.steps.insert(0, ("impute", IterativeImputer()))
+        elif imputer == "knn":
+            mod.steps.insert(0, ("impute", KNNImputer()))
+
     # If scaling wanted adds the scaling
     if scale:
+        if imputer:
+            insert_pos = 1
+        else:
+            insert_pos = 0
+
         if scale == "standard":
-            mod.steps.insert(0, ("scale", StandardScaler()))
+            mod.steps.insert(insert_pos, ("scale", StandardScaler()))
         elif scale == "minmax":
-            mod.steps.insert(0, ("scale", MinMaxScaler()))
+            mod.steps.insert(insert_pos, ("scale", MinMaxScaler()))
         elif scale == "robust":
-            mod.steps.insert(0, ("scale", RobustScaler()))
+            mod.steps.insert(insert_pos, ("scale", RobustScaler()))
         else:
             warnings.warn(
                 "scaler not supported expects standard or minmax got: "
@@ -208,12 +195,16 @@ def build_pipes(
 
     # Appends the feature selection wanted
     # if wanted scaling then feature selection is second step (i.e. position 1) else first step (i.e. position 0)
-    if scale:
-        insert_position = 1
-    else:
-        insert_position = 0
 
     if select_features:
+
+        if scale and imputer:
+            insert_position = 2
+        elif scale or imputer:
+            insert_position = 1
+        else:
+            insert_position = 0
+
         if select_features not in ["eagles", "select_from_model", "selectkbest"]:
             warnings.warn(
                 "select_features not supported expects eagles or select_from_model got: "
@@ -246,10 +237,7 @@ def build_pipes(
             elif mod_type == "rgr":
                 mod.steps.insert(
                     insert_position,
-                    (
-                        "feature_selection",
-                        SelectFromModel(estimator=Lasso()),
-                    ),
+                    ("feature_selection", SelectFromModel(estimator=Lasso()),),
                 )
         elif select_features == "selectkbest":
             if num_features < 10:
@@ -258,11 +246,7 @@ def build_pipes(
                 k = 10
 
             mod.steps.insert(
-                insert_position,
-                (
-                    "feature_selection",
-                    SelectKBest(k=k),
-                ),
+                insert_position, ("feature_selection", SelectKBest(k=k),),
             )
 
     # Adjust the params for the model to make sure have appropriate prefix
