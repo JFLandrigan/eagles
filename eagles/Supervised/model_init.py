@@ -25,7 +25,10 @@ from sklearn.linear_model import (
 from sklearn.svm import SVC, SVR
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
-from sklearn.impute import SimpleImputer, MissingIndicator, IterativeImputer, KNNImputer
+from sklearn.impute import (
+    SimpleImputer,
+    MissingIndicator,
+)  # , IterativeImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
@@ -62,15 +65,19 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     random_state_flag = [True if "random_state" in pr else False for pr in params]
     random_state_flag = any(random_state_flag)
 
-    if model not in [
-        "linear",
-        "svr",
-        "vc_clf",
-        "vc_regress",
-        "knn_clf",
-        "knn_regress",
-        "poisson",
-    ] and ("random_state" not in params.keys() and random_state_flag is False):
+    if (
+        model
+        not in [
+            "linear",
+            "svr",
+            "vc_clf",
+            "vc_regress",
+            "knn_clf",
+            "knn_regress",
+            "poisson",
+        ]
+        and ("random_state" not in params.keys() and random_state_flag is False)
+    ):
         if tune_test:
             params["random_state"] = [random_seed]
         else:
@@ -237,7 +244,10 @@ def build_pipes(
             elif mod_type == "rgr":
                 mod.steps.insert(
                     insert_position,
-                    ("feature_selection", SelectFromModel(estimator=Lasso()),),
+                    (
+                        "feature_selection",
+                        SelectFromModel(estimator=Lasso()),
+                    ),
                 )
         elif select_features == "selectkbest":
             if num_features < 10:
@@ -246,8 +256,17 @@ def build_pipes(
                 k = 10
 
             mod.steps.insert(
-                insert_position, ("feature_selection", SelectKBest(k=k),),
+                insert_position,
+                (
+                    "feature_selection",
+                    SelectKBest(k=k),
+                ),
             )
+
+    pipe_steps = ""
+    for k in mod.named_steps.keys():
+        pipe_steps = pipe_steps + type(mod.named_steps[k]).__name__ + ", "
+    print("Final pipeline: " + pipe_steps)
 
     # Adjust the params for the model to make sure have appropriate prefix
     if len(params) > 0:

@@ -377,12 +377,17 @@ class SupervisedTuner:
             return
 
         if pipe:
-            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe,)
+            self.mod, params = mi.build_pipes(
+                mod=self.mod,
+                params=params,
+                pipe=pipe,
+            )
         elif scale or select_features:
 
             self.mod, params = mi.build_pipes(
                 mod=self.mod,
                 params=params,
+                imputer=imputer,
                 scale=scale,
                 select_features=select_features,
                 mod_type=self.mod_type,
