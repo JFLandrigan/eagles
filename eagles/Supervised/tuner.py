@@ -349,7 +349,6 @@ class SupervisedTuner:
         num_features = X.shape[1]
 
         if self.tune_test:
-            print(f"Performing parameter tuning using: {self.tuner}")
             test_params = params.copy()
         else:
             test_params = None
@@ -413,6 +412,7 @@ class SupervisedTuner:
 
         # if param tuning wanted then implement tune params and grab best estimator
         if self.tuner:
+            print(f"Performing parameter tuning using: {self.tuner}")
             scv = self._tune_model_params(params=params)
             self.mod = scv.best_estimator_
             self.params = self.mod.get_params()
