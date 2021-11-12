@@ -25,7 +25,11 @@ from sklearn.linear_model import (
 from sklearn.svm import SVC, SVR
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
-from sklearn.impute import SimpleImputer, MissingIndicator, IterativeImputer, KNNImputer
+from sklearn.impute import (
+    SimpleImputer,
+    MissingIndicator,
+    KNNImputer,
+)  # , IterativeImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
