@@ -322,9 +322,10 @@ class SupervisedTuner:
         model=None,
         params: dict = None,
         pipe=None,
-        imputer: str = None,
-        scale: str = None,
-        select_features: str = None,
+        imputer: str or object = None,
+        scale: str or object = None,
+        resample: str or object = None,
+        select_features: str or object = None,
     ) -> dict:
         """
         Function to run the model tuning and evaluation.
@@ -376,11 +377,7 @@ class SupervisedTuner:
             return
 
         if pipe:
-            self.mod, params = mi.build_pipes(
-                mod=self.mod,
-                params=params,
-                pipe=pipe,
-            )
+            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe,)
         elif scale or select_features:
 
             self.mod, params = mi.build_pipes(

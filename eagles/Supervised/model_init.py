@@ -31,6 +31,8 @@ from sklearn.impute import (
     KNNImputer,
 )  # , IterativeImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from imblearn.over_sampling import RandomOverSampler, SMOTE
+from imblearn.under_sampling import RandomUnderSampler, AllKNN
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
 
@@ -146,11 +148,12 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
 
 def build_pipes(
     mod=None,
-    params: dict = None,
-    imputer: str = None,
-    scale: str = None,
     pipe=None,
-    select_features: str = None,
+    params: dict = None,
+    imputer: str or object = None,
+    scale: str or object = None,
+    resampler: str or object = None,
+    select_features: str or object = None,
     mod_type: str = "clf",
     num_features: int = None,
 ):
