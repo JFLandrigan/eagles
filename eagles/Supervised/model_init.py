@@ -66,19 +66,15 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     random_state_flag = [True if "random_state" in pr else False for pr in params]
     random_state_flag = any(random_state_flag)
 
-    if (
-        model
-        not in [
-            "linear",
-            "svr",
-            "vc_clf",
-            "vc_regress",
-            "knn_clf",
-            "knn_regress",
-            "poisson",
-        ]
-        and ("random_state" not in params.keys() and random_state_flag is False)
-    ):
+    if model not in [
+        "linear",
+        "svr",
+        "vc_clf",
+        "vc_regress",
+        "knn_clf",
+        "knn_regress",
+        "poisson",
+    ] and ("random_state" not in params.keys() and random_state_flag is False):
         if tune_test:
             params["random_state"] = [random_seed]
         else:
@@ -170,16 +166,17 @@ def build_pipes(
 
     # inserts imputation method into the first position in the pipe
     if imputer:
-        if "simple" in imputer:
-            mod.steps.insert(
-                0, ("impute", SimpleImputer(strategy=imputer.split("_")[1]))
-            )
-        elif imputer == "missing_indicator":
-            mod.steps.insert(0, ("impute", MissingIndicator()))
-        elif imputer == "iterative":
-            mod.steps.insert(0, ("impute", IterativeImputer()))
-        elif imputer == "knn":
-            mod.steps.insert(0, ("impute", KNNImputer()))
+        if type(imputer) == str:
+            if "simple" in imputer:
+                mod.steps.insert(
+                    0, ("impute", SimpleImputer(strategy=imputer.split("_")[1]))
+                )
+            elif imputer == "missing_indicator":
+                mod.steps.insert(0, ("impute", MissingIndicator()))
+            elif imputer == "knn":
+                mod.steps.insert(0, ("impute", KNNImputer()))
+        else:
+            mod.steps.insert(0, ("impute", imputer))
 
     # If scaling wanted adds the scaling
     if scale:
@@ -187,19 +184,15 @@ def build_pipes(
             insert_pos = 1
         else:
             insert_pos = 0
-
-        if scale == "standard":
-            mod.steps.insert(insert_pos, ("scale", StandardScaler()))
-        elif scale == "minmax":
-            mod.steps.insert(insert_pos, ("scale", MinMaxScaler()))
-        elif scale == "robust":
-            mod.steps.insert(insert_pos, ("scale", RobustScaler()))
+        if type(scale) == str:
+            if scale == "standard":
+                mod.steps.insert(insert_pos, ("scale", StandardScaler()))
+            elif scale == "minmax":
+                mod.steps.insert(insert_pos, ("scale", MinMaxScaler()))
+            elif scale == "robust":
+                mod.steps.insert(insert_pos, ("scale", RobustScaler()))
         else:
-            warnings.warn(
-                "scaler not supported expects standard or minmax got: "
-                + scale
-                + " no scaler added to model"
-            )
+            mod.steps.insert(insert_pos, ("scale", scale))
 
     # Appends the feature selection wanted
     # if wanted scaling then feature selection is second step (i.e. position 1) else first step (i.e. position 0)
@@ -213,55 +206,53 @@ def build_pipes(
         else:
             insert_position = 0
 
-        if select_features not in ["eagles", "select_from_model", "selectkbest"]:
-            warnings.warn(
-                "select_features not supported expects eagles or select_from_model got: "
-                + str(select_features)
-            )
+        if type(select_features) == str:
+            if select_features not in ["eagles", "select_from_model", "selectkbest"]:
+                warnings.warn(
+                    "select_features not supported expects eagles or select_from_model got: "
+                    + str(select_features)
+                )
 
-        if select_features == "eagles":
-            mod.steps.insert(
-                insert_position,
-                (
-                    "feature_selection",
-                    EaglesFeatureSelection(
-                        methods=["correlation", "regress"], problem_type=mod_type
-                    ),
-                ),
-            )
-        elif select_features == "select_from_model":
-            if mod_type == "clf":
+            if select_features == "eagles":
                 mod.steps.insert(
                     insert_position,
                     (
                         "feature_selection",
-                        SelectFromModel(
-                            estimator=LogisticRegression(
-                                solver="liblinear", penalty="l1"
-                            )
+                        EaglesFeatureSelection(
+                            methods=["correlation", "regress"], problem_type=mod_type
                         ),
                     ),
                 )
-            elif mod_type == "rgr":
-                mod.steps.insert(
-                    insert_position,
-                    (
-                        "feature_selection",
-                        SelectFromModel(estimator=Lasso()),
-                    ),
-                )
-        elif select_features == "selectkbest":
-            if num_features < 10:
-                k = np.ceil(num_features / 2).astype(int)
-            else:
-                k = 10
+            elif select_features == "select_from_model":
+                if mod_type == "clf":
+                    mod.steps.insert(
+                        insert_position,
+                        (
+                            "feature_selection",
+                            SelectFromModel(
+                                estimator=LogisticRegression(
+                                    solver="liblinear", penalty="l1"
+                                )
+                            ),
+                        ),
+                    )
+                elif mod_type == "rgr":
+                    mod.steps.insert(
+                        insert_position,
+                        ("feature_selection", SelectFromModel(estimator=Lasso()),),
+                    )
+            elif select_features == "selectkbest":
+                if num_features < 10:
+                    k = np.ceil(num_features / 2).astype(int)
+                else:
+                    k = 10
 
+                mod.steps.insert(
+                    insert_position, ("feature_selection", SelectKBest(k=k),),
+                )
+        else:
             mod.steps.insert(
-                insert_position,
-                (
-                    "feature_selection",
-                    SelectKBest(k=k),
-                ),
+                insert_position, select_features,
             )
 
     pipe_steps = ""
