@@ -25,8 +25,14 @@ from sklearn.linear_model import (
 from sklearn.svm import SVC, SVR
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
+from sklearn.impute import (
+    SimpleImputer,
+    MissingIndicator,
+    KNNImputer,
+)  # , IterativeImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
 
 from xgboost import XGBRegressor, XGBClassifier
 
@@ -38,33 +44,17 @@ import warnings
 logger = logging.getLogger(__name__)
 
 
-# def define_problem_type(mod=None, y=None):
-
-#     problem_type = None
-
-#     if type(mod).__name__ in config.clf_models:
-#         problem_type = "clf"
-#     elif type(mod).__name__ in config.regress_models:
-#         problem_type = "regress"
-#     elif type(mod).__name__ == "Pipeline":
-#         if type(mod.named_steps["clf"]).__name__ in config.clf_models:
-#             problem_type = "clf"
-#         elif type(mod.named_steps["clf"]).__name__ in config.regress_models:
-#             problem_type = "regress"
-#         elif "Classifier" in type(mod).__name__:
-#             problem_type = "clf"
-#         elif "Regressor" in type(mod).__name__:
-#             problem_type = "regress"
-#     elif "Classifier" in type(mod).__name__:
-#         problem_type = "clf"
-#     elif "Regressor" in type(mod).__name__:
-#         problem_type = "regress"
-
-#     if problem_type is None:
-#         if len(np.unique(y)) == 2:
-#             problem_type = "clf"
-
-#     return problem_type
+def init_cv_splitter(cv_method=None, num_cv: int = 5, random_seed: int = None):
+    if type(cv_method) == str:
+        if cv_method == "kfold":
+            splitter = KFold(n_splits=num_cv, shuffle=True, random_state=random_seed)
+        elif cv_method == "time":
+            splitter = TimeSeriesSplit(n_splits=num_cv)
+        elif cv_method == "stratified_k":
+            splitter = StratifiedKFold(n_splits=num_cv, random_state=random_seed)
+    else:
+        splitter = cv_method
+    return splitter
 
 
 def init_model(model=None, params={}, random_seed=None, tune_test=False):
@@ -160,10 +150,11 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
 
 def build_pipes(
     mod=None,
-    params: dict = None,
-    scale: str = None,
     pipe=None,
-    select_features: str = None,
+    params: dict = None,
+    imputer: str or object = None,
+    scale: str or object = None,
+    select_features: str or object = None,
     mod_type: str = "clf",
     num_features: int = None,
 ):
@@ -177,79 +168,109 @@ def build_pipes(
         pipe = Pipeline(steps=[(mod_type, mod)])
         mod = pipe
 
+    # inserts imputation method into the first position in the pipe
+    if imputer:
+        if type(imputer) == str:
+            if "simple" in imputer:
+                mod.steps.insert(
+                    0, ("impute", SimpleImputer(strategy=imputer.split("_")[1]))
+                )
+            elif imputer == "missing_indicator":
+                mod.steps.insert(0, ("impute", MissingIndicator()))
+            elif imputer == "knn":
+                mod.steps.insert(0, ("impute", KNNImputer()))
+        else:
+            mod.steps.insert(0, ("impute", imputer))
+
     # If scaling wanted adds the scaling
     if scale:
-        if scale == "standard":
-            mod.steps.insert(0, ("scale", StandardScaler()))
-        elif scale == "minmax":
-            mod.steps.insert(0, ("scale", MinMaxScaler()))
-        elif scale == "robust":
-            mod.steps.insert(0, ("scale", RobustScaler()))
+        if imputer:
+            insert_pos = 1
         else:
-            warnings.warn(
-                "scaler not supported expects standard or minmax got: "
-                + scale
-                + " no scaler added to model"
-            )
+            insert_pos = 0
+        if type(scale) == str:
+            if scale == "standard":
+                mod.steps.insert(insert_pos, ("scale", StandardScaler()))
+            elif scale == "minmax":
+                mod.steps.insert(insert_pos, ("scale", MinMaxScaler()))
+            elif scale == "robust":
+                mod.steps.insert(insert_pos, ("scale", RobustScaler()))
+        else:
+            mod.steps.insert(insert_pos, ("scale", scale))
 
     # Appends the feature selection wanted
     # if wanted scaling then feature selection is second step (i.e. position 1) else first step (i.e. position 0)
-    if scale:
-        insert_position = 1
-    else:
-        insert_position = 0
 
     if select_features:
-        if select_features not in ["eagles", "select_from_model", "selectkbest"]:
-            warnings.warn(
-                "select_features not supported expects eagles or select_from_model got: "
-                + str(select_features)
-            )
 
-        if select_features == "eagles":
-            mod.steps.insert(
-                insert_position,
-                (
-                    "feature_selection",
-                    EaglesFeatureSelection(
-                        methods=["correlation", "regress"], problem_type=mod_type
-                    ),
-                ),
-            )
-        elif select_features == "select_from_model":
-            if mod_type == "clf":
+        if scale and imputer:
+            insert_position = 2
+        elif scale or imputer:
+            insert_position = 1
+        else:
+            insert_position = 0
+
+        if type(select_features) == str:
+            if select_features not in ["eagles", "select_from_model", "selectkbest"]:
+                warnings.warn(
+                    "select_features not supported expects eagles or select_from_model got: "
+                    + str(select_features)
+                )
+
+            if select_features == "eagles":
                 mod.steps.insert(
                     insert_position,
                     (
                         "feature_selection",
-                        SelectFromModel(
-                            estimator=LogisticRegression(
-                                solver="liblinear", penalty="l1"
-                            )
+                        EaglesFeatureSelection(
+                            methods=["correlation", "regress"], problem_type=mod_type
                         ),
                     ),
                 )
-            elif mod_type == "rgr":
+            elif select_features == "select_from_model":
+                if mod_type == "clf":
+                    mod.steps.insert(
+                        insert_position,
+                        (
+                            "feature_selection",
+                            SelectFromModel(
+                                estimator=LogisticRegression(
+                                    solver="liblinear", penalty="l1"
+                                )
+                            ),
+                        ),
+                    )
+                elif mod_type == "rgr":
+                    mod.steps.insert(
+                        insert_position,
+                        (
+                            "feature_selection",
+                            SelectFromModel(estimator=Lasso()),
+                        ),
+                    )
+            elif select_features == "selectkbest":
+                if num_features < 10:
+                    k = np.ceil(num_features / 2).astype(int)
+                else:
+                    k = 10
+
                 mod.steps.insert(
                     insert_position,
                     (
                         "feature_selection",
-                        SelectFromModel(estimator=Lasso()),
+                        SelectKBest(k=k),
                     ),
                 )
-        elif select_features == "selectkbest":
-            if num_features < 10:
-                k = np.ceil(num_features / 2).astype(int)
-            else:
-                k = 10
-
+        else:
             mod.steps.insert(
                 insert_position,
-                (
-                    "feature_selection",
-                    SelectKBest(k=k),
-                ),
+                select_features,
             )
+
+    pipe_steps = ""
+    for k in mod.named_steps.keys():
+        pipe_steps = pipe_steps + type(mod.named_steps[k]).__name__ + ", "
+    print("Final pipeline: " + pipe_steps)
 
     # Adjust the params for the model to make sure have appropriate prefix
     if len(params) > 0:

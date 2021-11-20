@@ -1,6 +1,6 @@
 # for lime use https://github.com/marcotcr/lime
 
-from eagles.Supervised import model_init as mi
+from eagles.Supervised import model_init as mi, config
 from eagles.Supervised.utils import (
     tuner_utils as tu,
     _print_utils,
@@ -18,7 +18,6 @@ from IPython.display import display
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
 
-from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, confusion_matrix
 
 import warnings
@@ -35,6 +34,7 @@ class SupervisedTuner:
         tune_metric: str = None,
         tuner: str = None,
         eval_metrics: list = [],
+        cv_method: str = "kfold",
         num_cv: int = 5,
         bins: list = None,
         num_top_fts: int = None,
@@ -55,6 +55,7 @@ class SupervisedTuner:
             tune_metric (str, optional): Defaults to 'f1' if classification or 'mse' if regression, Metric to be used during the paranmeter tuning phase. Defaults to None.
             tuner (str, optional): Indicator for type of param tuning search. Defaults to random_cv but can get grid_cv or bayes_cv as well. Defaults to None.
             eval_metrics (list, optional): [description]. Defaults to [].
+            cv_method (str, optional) : Method for performing cross validation. Expects kfold, time or stratified_k
             num_cv (int, optional): Number of cross validation iterations to be performed. Defaults to 5.
             bins (list, optional): For binary classification problems determines the number of granularity of the probability bins used in the distribution by percent actual output. Defaults to None.
             num_top_fts (int, optional): Number of most important features to include in output of eval. If none prints all importance values. Defaults to None.
@@ -72,6 +73,7 @@ class SupervisedTuner:
         self.problem_type = problem_type
         self.tune_metric = tune_metric
         self.eval_metrics = eval_metrics
+        self.cv_method = cv_method
         self.num_cv = num_cv
         self.bins = bins
         self.num_top_fts = num_top_fts
@@ -89,6 +91,7 @@ class SupervisedTuner:
         self.X = None
         self.y = None
         self.mod = None
+        self.full_fit_mod = None
         self.mod_type = None
         self.params = None
 
@@ -112,6 +115,14 @@ class SupervisedTuner:
             self.tune_test = False
         else:
             self.tune_test = True
+
+        # set the cross validation splitter
+        self.cv_splitter = mi.init_cv_splitter(
+            cv_method=self.cv_method, num_cv=self.num_cv, random_seed=self.random_seed
+        )
+
+        if tuner and problem_type == "regress":
+            self.tune_metric = config.regress_metric_key[self.tune_metric]
 
         return
 
@@ -137,7 +148,7 @@ class SupervisedTuner:
                 param_distributions=params,
                 n_iter=self.n_iterations,
                 scoring=self.tune_metric,
-                cv=self.num_cv,
+                cv=self.cv_splitter,
                 refit=True,
                 n_jobs=self.n_jobs,
                 verbose=2,
@@ -150,7 +161,7 @@ class SupervisedTuner:
                 search_spaces=params,
                 scoring=self.tune_metric,
                 n_iter=self.n_iterations,
-                cv=self.num_cv,
+                cv=self.cv_splitter,
                 verbose=2,
                 refit=True,
                 n_jobs=self.n_jobs,
@@ -161,13 +172,15 @@ class SupervisedTuner:
                 self.mod,
                 param_grid=params,
                 scoring=self.tune_metric,
-                cv=self.num_cv,
+                cv=self.cv_splitter,
                 refit=True,
                 n_jobs=self.n_jobs,
                 verbose=1,
             )
 
         scv.fit(self.X, self.y)
+
+        self.full_fit_mod = scv
 
         print(
             self.tune_metric
@@ -180,7 +193,7 @@ class SupervisedTuner:
 
     def model_eval(self):
         print("Performing CV Runs: " + str(self.num_cv))
-        kf = KFold(n_splits=self.num_cv, shuffle=True, random_state=self.random_seed)
+        kf = self.cv_splitter
 
         if self.problem_type == "binary":
             avg = "binary"
@@ -312,8 +325,9 @@ class SupervisedTuner:
         model=None,
         params: dict = None,
         pipe=None,
-        scale: str = None,
-        select_features: str = None,
+        imputer: str or object = None,
+        scale: str or object = None,
+        select_features: str or object = None,
     ) -> dict:
         """
         Function to run the model tuning and evaluation.
@@ -323,8 +337,9 @@ class SupervisedTuner:
             model ([str or sklearn compatible model object]: String name of model evaluating (see model support) or sklearn compatible model . Defaults to None.
             params (dict, optional): Dictionary containing key value pairs for parameters of model. Note for tuning values should be in list. Defaults to None.
             pipe ([type], optional): Sklearn compatible pipeline object. Defaults to None.
-            scale ([str], optional): standard, minmax, robust indicating to scale the features during cross validation. Defaults to None.
-            select_features ([str], optional): The expected can be set to "eagles" (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop).. Defaults to None.
+            imputer ([str or object], optional): Imputation method expects either simple_<method>, missing_indicator, knn or sklearn compatibale object. Defaults to None.
+            scale ([str or object], optional): standard, minmax, robust indicating or sklearn compatibale object to scale the features during cross validation. Defaults to None.
+            select_features ([str or object], optional): The expected can be set to "eagles" (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop), selectkbest defaults to top 10 (if less then 10 then 50% features returned) or sklearn compatibale object. Defaults to None.
 
         Returns:
             dict: Dictionary containing results from tuning including model object, tuning metrics, parameter, features and others.
@@ -338,7 +353,6 @@ class SupervisedTuner:
         num_features = X.shape[1]
 
         if self.tune_test:
-            print(f"Performing parameter tuning using: {self.tuner}")
             test_params = params.copy()
         else:
             test_params = None
@@ -371,11 +385,12 @@ class SupervisedTuner:
                 params=params,
                 pipe=pipe,
             )
-        elif scale or select_features:
+        elif scale or select_features or imputer:
 
             self.mod, params = mi.build_pipes(
                 mod=self.mod,
                 params=params,
+                imputer=imputer,
                 scale=scale,
                 select_features=select_features,
                 mod_type=self.mod_type,
@@ -401,10 +416,13 @@ class SupervisedTuner:
 
         # if param tuning wanted then implement tune params and grab best estimator
         if self.tuner:
+            print(f"Performing parameter tuning using: {self.tuner}")
             scv = self._tune_model_params(params=params)
             self.mod = scv.best_estimator_
             self.params = self.mod.get_params()
-            _ = _print_utils._print_param_tuning_results(mod=self.mod, X=self.X)
+            _ = _print_utils._print_param_tuning_results(
+                mod=self.mod, mod_type=self.mod_type, X=self.X
+            )
 
         # perform the model eval
         res_dict = self.model_eval()
