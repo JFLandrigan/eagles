@@ -334,8 +334,9 @@ class SupervisedTuner:
             model ([str or sklearn compatible model object]: String name of model evaluating (see model support) or sklearn compatible model . Defaults to None.
             params (dict, optional): Dictionary containing key value pairs for parameters of model. Note for tuning values should be in list. Defaults to None.
             pipe ([type], optional): Sklearn compatible pipeline object. Defaults to None.
-            scale ([str], optional): standard, minmax, robust indicating to scale the features during cross validation. Defaults to None.
-            select_features ([str], optional): The expected can be set to "eagles" (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop).. Defaults to None.
+            imputer ([str or object], optional): Imputation method expects either simple_<method>, missing_indicator, knn or sklearn compatibale object. Defaults to None.
+            scale ([str or object], optional): standard, minmax, robust indicating or sklearn compatibale object to scale the features during cross validation. Defaults to None.
+            select_features ([str or object], optional): The expected can be set to "eagles" (defaults to correlation drop and l1 penalty) or "select_from_model" (defaults to l1 drop), selectkbest defaults to top 10 (if less then 10 then 50% features returned) or sklearn compatibale object. Defaults to None.
 
         Returns:
             dict: Dictionary containing results from tuning including model object, tuning metrics, parameter, features and others.
