@@ -324,7 +324,6 @@ class SupervisedTuner:
         pipe=None,
         imputer: str or object = None,
         scale: str or object = None,
-        resample: str or object = None,
         select_features: str or object = None,
     ) -> dict:
         """
@@ -377,8 +376,12 @@ class SupervisedTuner:
             return
 
         if pipe:
-            self.mod, params = mi.build_pipes(mod=self.mod, params=params, pipe=pipe,)
-        elif scale or select_features:
+            self.mod, params = mi.build_pipes(
+                mod=self.mod,
+                params=params,
+                pipe=pipe,
+            )
+        elif scale or select_features or imputer:
 
             self.mod, params = mi.build_pipes(
                 mod=self.mod,

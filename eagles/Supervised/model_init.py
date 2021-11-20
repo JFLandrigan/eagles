@@ -31,8 +31,6 @@ from sklearn.impute import (
     KNNImputer,
 )  # , IterativeImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from imblearn.over_sampling import RandomOverSampler, SMOTE
-from imblearn.under_sampling import RandomUnderSampler, AllKNN
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold, TimeSeriesSplit, StratifiedKFold
 
@@ -68,15 +66,19 @@ def init_model(model=None, params={}, random_seed=None, tune_test=False):
     random_state_flag = [True if "random_state" in pr else False for pr in params]
     random_state_flag = any(random_state_flag)
 
-    if model not in [
-        "linear",
-        "svr",
-        "vc_clf",
-        "vc_regress",
-        "knn_clf",
-        "knn_regress",
-        "poisson",
-    ] and ("random_state" not in params.keys() and random_state_flag is False):
+    if (
+        model
+        not in [
+            "linear",
+            "svr",
+            "vc_clf",
+            "vc_regress",
+            "knn_clf",
+            "knn_regress",
+            "poisson",
+        ]
+        and ("random_state" not in params.keys() and random_state_flag is False)
+    ):
         if tune_test:
             params["random_state"] = [random_seed]
         else:
@@ -152,7 +154,6 @@ def build_pipes(
     params: dict = None,
     imputer: str or object = None,
     scale: str or object = None,
-    resampler: str or object = None,
     select_features: str or object = None,
     mod_type: str = "clf",
     num_features: int = None,
@@ -242,7 +243,10 @@ def build_pipes(
                 elif mod_type == "rgr":
                     mod.steps.insert(
                         insert_position,
-                        ("feature_selection", SelectFromModel(estimator=Lasso()),),
+                        (
+                            "feature_selection",
+                            SelectFromModel(estimator=Lasso()),
+                        ),
                     )
             elif select_features == "selectkbest":
                 if num_features < 10:
@@ -251,11 +255,16 @@ def build_pipes(
                     k = 10
 
                 mod.steps.insert(
-                    insert_position, ("feature_selection", SelectKBest(k=k),),
+                    insert_position,
+                    (
+                        "feature_selection",
+                        SelectKBest(k=k),
+                    ),
                 )
         else:
             mod.steps.insert(
-                insert_position, select_features,
+                insert_position,
+                select_features,
             )
 
     pipe_steps = ""
