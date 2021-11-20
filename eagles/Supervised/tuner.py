@@ -91,6 +91,7 @@ class SupervisedTuner:
         self.X = None
         self.y = None
         self.mod = None
+        self.full_fit_mod = None
         self.mod_type = None
         self.params = None
 
@@ -178,6 +179,8 @@ class SupervisedTuner:
             )
 
         scv.fit(self.X, self.y)
+
+        self.full_fit_mod = scv
 
         print(
             self.tune_metric
