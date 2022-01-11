@@ -210,6 +210,7 @@ class SupervisedTuner:
             "bt": None,
             "ft_imp_df": None,
             "final_test_inds": None,
+            "final_preds": None,
         }
 
         # TODO need to implement for forward chain as well
@@ -261,6 +262,9 @@ class SupervisedTuner:
 
         res_dict["metric_dictionary"] = metric_dictionary
         res_dict["final_test_inds"] = test_index
+        res_dict["final_preds"] = preds
+        if self.problem_type in ["binary", "multi-class"]:
+            res_dict["final_pred_proba"] = pred_probs
 
         print("Final cv train test split")
         for metric in self.eval_metrics:
