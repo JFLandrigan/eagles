@@ -136,6 +136,8 @@ def plot_true_pred_scatter(y_true, y_pred):
             "value": list(df["y_true"]) + list(df["y_pred"]),
         }
     )
-    _ = sns.kdeplot(tmp_df["value"], hue=tmp_df["type"], bw_method=0.2, label="true")
+    _ = sns.kdeplot(
+        tmp_df["value"], hue=tmp_df["type"], bw_method=0.2, label="true", fill=True
+    )
 
     return
