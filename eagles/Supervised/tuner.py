@@ -204,7 +204,13 @@ class SupervisedTuner:
 
         metric_dictionary = mu.init_model_metrics(metrics=self.eval_metrics)
 
-        res_dict = {"cr": None, "cf": None, "bt": None, "ft_imp_df": None}
+        res_dict = {
+            "cr": None,
+            "cf": None,
+            "bt": None,
+            "ft_imp_df": None,
+            "final_test_inds": None,
+        }
 
         # TODO need to implement for forward chain as well
         cnt = 1
@@ -254,6 +260,7 @@ class SupervisedTuner:
             display(tmp_metric_df)
 
         res_dict["metric_dictionary"] = metric_dictionary
+        res_dict["final_test_inds"] = test_index
 
         print("Final cv train test split")
         for metric in self.eval_metrics:
@@ -261,6 +268,11 @@ class SupervisedTuner:
                 metric
                 + " score: "
                 + str(round(metric_dictionary[metric + "_scores"][-1], 4))
+            )
+
+        if self.problem_type == "regress":
+            print(
+                f"Pearson correlation between y_true and y_pred: {np.round(scipy.stats.pearsonr(x=y_test, y=preds)[0], 4)}"
             )
 
         # TODO ADD in res_dict cr, cf, bt and ftimpdf
