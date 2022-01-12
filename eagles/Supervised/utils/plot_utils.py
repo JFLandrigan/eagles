@@ -141,3 +141,13 @@ def plot_true_pred_scatter(y_true, y_pred):
     )
 
     return
+
+
+def plot_error_distrib(y_true=None, y_pred=None) -> None:
+    diffs = y_true - y_pred
+    tmp = pd.DataFrame({"errors": diffs})
+    plt.figure(figsize=(10, 10))
+    _ = sns.histplot(data=tmp, x="errors", kde=True)
+    plt.title("Error Distribution (y_true - y_pred)")
+
+    return

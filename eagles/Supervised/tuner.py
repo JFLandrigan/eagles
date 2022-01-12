@@ -298,6 +298,7 @@ class SupervisedTuner:
             # todo finish this plot
             if self.disp:
                 _ = pu.plot_true_pred_scatter(y_true=y_test, y_pred=preds)
+                _ = pu.plot_error_distrib(y_true=y_test, y_pred=preds)
 
         if self.problem_type == "binary":
             prob_df = pd.DataFrame({"probab": pred_probs, "actual": y_test})
