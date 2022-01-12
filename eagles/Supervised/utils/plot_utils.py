@@ -25,6 +25,7 @@ def plot_feature_importance(ft_df=None, mod_name=None, num_top_fts=None, plot_ti
         ("Regression" in mod_name)
         or (mod_name == "Lasso")
         or (mod_name == "ElasticNet")
+        or (mod_name == "Ridge")
     ):
         plt.figure(figsize=(10, 10), dpi=80, facecolor="w", edgecolor="k")
         ax = sns.barplot(x="Coef", y="Feature", data=ft_df)
